@@ -44,8 +44,7 @@ const AccountPage: React.FC = () => {
         const updatedProfile = {
             fullName,
             phone: mobileNumber,
-            preferredLang: preferredLanguage,
-            dateOfBirth: dob,
+            preferredLang: preferredLanguage
         };
 
         try {
@@ -72,8 +71,6 @@ const AccountPage: React.FC = () => {
     const [email, setEmail] = useState(''); // Email is non-editable
     const [mobileNumber, setMobileNumber] = useState('');
     const [preferredLanguage, setPreferredLanguage] = useState('');
-    const [dob, setDob] = useState('');
-    const [password, setPassword] = useState('');
 
     // Define the language options for the dropdown
     const languageOptions = [

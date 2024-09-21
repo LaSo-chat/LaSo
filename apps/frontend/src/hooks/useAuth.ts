@@ -9,11 +9,17 @@ export const useAuth = () => {
 
     useEffect(() => {
         const checkSession = async () => {
-            const { data, error } = await supabase.auth.getSession();
-            if (data?.session) {
-                dispatch(login(data.session.user)); // Restore user session in Redux
+            try {
+                const { data, error } = await supabase.auth.getSession();
+                if (error) throw error; // Throw error if exists
+                if (data?.session) {
+                    dispatch(login(data.session.user)); // Restore user session in Redux
+                }
+            } catch (err) {
+                console.error('Error checking session:', err);
             }
         };
+
         checkSession();
     }, [dispatch]);
 };

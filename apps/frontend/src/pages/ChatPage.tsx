@@ -8,9 +8,10 @@ import Loader from '@/components/Loader';
 interface Message {
     id: number;
     content: string;
-    sender: { supabaseId: string };
-    receiverId: string;
+    sender?: { supabaseId: string };
+    receiverId: number;
     createdAt: string;
+    translatedContent?: string;
 }
 
 const ChatPage: React.FC = () => {
@@ -74,7 +75,7 @@ const ChatPage: React.FC = () => {
                 id: Date.now(), // Temporary ID, will be replaced by server
                 content: message,
                 sender: { supabaseId: senderId },
-                receiverId: id,
+                receiverId: parseInt(id, 10),
                 createdAt: new Date().toISOString()
             };
 
