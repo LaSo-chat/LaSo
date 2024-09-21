@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model to store user information and profile details
+model User {
+  id               Int       @id @default(autoincrement())
+  supabaseId       String    @unique  // Supabase user ID
+  email            String    @unique
+  fullName         String
+  phone            String?
+  country          String?
+  dateOfBirth      DateTime? // Optional field for DOB
+  preferredLang    String    // Preferred language (e.g., 'en', 'fr')
+  profilePicture   String?   // Profile picture URL
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  messagesSent     Message[] @relation("SentMessages")
+  messagesReceived Message[] @relation("ReceivedMessages")
+  contacts         Contact[] @relation("UserContacts")
+  contactOf        Contact[] @relation("ContactUsers")
+  auth             Auth?     @relation("UserAuth")
+}
+
+// Message model to store chat messages between users
+model Message {
+  id         Int      @id @default(autoincrement())
+  content    String   // Original message content
+  senderId   Int
+  receiverId Int
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id])
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  createdAt  DateTime @default(now())
+  isRead     Boolean  @default(false)
+}
+
+// Contact model to store the relationship between users
+model Contact {
+  id        Int @id @default(autoincrement())
+  userId    Int
+  receiverId Int // Renamed to represent the contact or receiver
+
+  user    User @relation("UserContacts", fields: [userId], references: [id])
+  receiver User @relation("ContactUsers", fields: [receiverId], references: [id])
+
+  @@unique([userId, receiverId]) // Ensure uniqueness, no duplicate connections
+}
+
+// Auth model for handling authentication providers (via Supabase)
+model Auth {
+  id       Int    @id @default(autoincrement())
+  userId   Int    @unique
+  provider String // e.g., 'email', 'google', etc.
+  user     User   @relation("UserAuth", fields: [userId], references: [id])
+}

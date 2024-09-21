@@ -1,0 +1,193 @@
+// src/chat/chat.service.ts
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { Translate } from '@google-cloud/translate/build/src/v2';
+
+@Injectable()
+export class ChatService {
+  constructor(private prisma: PrismaService) {}
+
+  private translate = new Translate({
+    key: process.env.GOOGLE_TRANSLATE_API_KEY // replace with your actual API key
+  });
+
+  // Create a message between two users
+  async createMessage(senderId: number, receiverId: number, content: string) {
+    console.log(senderId,"senderId");
+    console.log(receiverId,"receiverId");
+    console.log(content,"content");
+    
+    return this.prisma.message.create({
+      data: {
+        senderId,
+        receiverId,
+        content,
+      },
+    });
+  }
+
+// Get messages between two users (supabaseId for sender, internal ID for receiver)
+async getMessages(supabaseId: string, contactId: number) {
+  // Step 1: Fetch the internal user ID using Supabase UUID
+  const user = await this.prisma.user.findUnique({
+    where: { supabaseId: supabaseId }, 
+  });
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  const senderId = user.id; // Get the internal user ID
+
+  // Step 2: Retrieve the contact relationship
+  const contactRelation = await this.prisma.contact.findFirst({
+    where: { userId: +senderId, id: +contactId },
+    include: { receiver: true }  // Include receiver information
+  });
+
+  if (!contactRelation) {
+    throw new Error('No contact relationship found between users.');
+  }
+
+  // Step 3: Use the relationship to fetch messages between sender and receiver
+  const messages = await this.prisma.message.findMany({
+    where: {
+      OR: [
+        { senderId, receiverId: +contactRelation.receiverId },  // User is sender
+        { senderId: contactRelation.receiverId, receiverId: +senderId },  // User is receiver
+      ],
+    },
+    orderBy: {
+      createdAt: 'asc',  // Order messages by the time of creation
+    },
+    include: {
+      sender: { select: { supabaseId: true } }, // Include sender's Supabase UUID
+      receiver: { select: { supabaseId: true } } // Include receiver's Supabase UUID
+    },
+  });
+
+  const receiver = await this.prisma.user.findUnique({
+    where: { id: contactRelation.receiverId },
+  });
+
+  console.log(receiver,"messages----------------------");
+  console.log(messages,"messages----------------------");
+  
+
+  const translatedMessages = await Promise.all(
+    messages.map(async (msg) => {
+      if (msg.senderId != senderId) {
+        const [translatedText] = await this.translate.translate(
+          msg.content,
+          user.preferredLang
+        );
+        return { ...msg, translatedContent: translatedText };
+      }
+      return msg;
+    })
+  );
+
+  return translatedMessages;
+}
+
+
+
+
+  // Create a relationship between users
+async createContact(userId: number, receiverId: number) {
+  // Check if the relationship already exists in either direction
+  const existingContact = await this.prisma.contact.findFirst({
+    where: {
+      OR: [
+        { userId, receiverId },   // User 1 -> User 2
+        { userId: receiverId, receiverId: userId }, // User 2 -> User 1
+      ],
+    },
+  });
+
+  // If no existing contact, create bidirectional contacts
+  if (!existingContact) {
+    // Create the first contact (User 1 -> User 2)
+    await this.prisma.contact.create({
+      data: {
+        userId,
+        receiverId,
+      },
+    });
+
+    // Create the reverse contact (User 2 -> User 1)
+    await this.prisma.contact.create({
+      data: {
+        userId: receiverId,
+        receiverId: userId,
+      },
+    });
+  }
+
+  // Return a success message or the existing contact
+  return existingContact || { message: 'Contacts created successfully' };
+}
+
+
+// Get the contacts for the logged-in user
+async getContactsForUser(supabaseId: string) {
+  // First, find the user based on their Supabase UUID
+  const user = await this.prisma.user.findUnique({
+    where: { supabaseId: supabaseId }, // Query based on Supabase UUID (userId in Prisma)
+  });
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  // Find contacts where the user is either the contact or user in the Contact relationship
+  const contacts = await this.prisma.contact.findMany({
+    where: {
+      OR: [
+        { userId: user.id }, // Fetch where user is the primary contact
+        { receiverId: user.id }, // Fetch where user is the secondary contact
+      ],
+    },
+    include: {
+      user: true,   // Include related user (contact's details)
+      receiver: true // Include related contact's details
+    },
+  });
+
+  // Filter out the contacts where the logged-in user is listed as the contact
+  const filteredContacts = contacts.filter(
+    (contact) => contact.receiverId !== user.id
+  );
+
+  // Fetch the last message for each contact
+  const contactsWithLastMessage = await Promise.all(
+    filteredContacts.map(async (contact) => {
+      const lastMessage = await this.prisma.message.findFirst({
+        where: {
+          OR: [
+            { senderId: contact.userId, receiverId: contact.receiverId },
+            { senderId: contact.receiverId, receiverId: contact.userId },
+          ],
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      return {
+        ...contact,
+        lastMessage,
+        hasUnreadMessages: lastMessage ? !lastMessage.isRead && lastMessage.receiverId === user.id : false,
+      };
+    })
+  );
+
+  console.log(contactsWithLastMessage,'contactsWithLastMessage');
+  
+
+  return contactsWithLastMessage;
+}
+
+
+
+}
