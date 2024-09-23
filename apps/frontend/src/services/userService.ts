@@ -12,7 +12,8 @@ export async function getUserProfile() {
     const token = sessionData.session.access_token; // Extract the access token
 
     // Fetch the user profile data from your backend API
-    const response = await fetch('/api/user/profile', {
+    const backendUrl = import.meta.env.VITE_API_URL || 'https://laso.onrender.com';
+    const response = await fetch(`${backendUrl}/api/user/profile`, {
         method: 'GET',
         headers: {
             'Authorization': `Bearer ${token}`, // Include the token in headers
@@ -39,7 +40,8 @@ export async function updateUserProfile(data: any) {
     const token = sessionData.session.access_token; // Extract the access token
 
     // Send a PUT request to the backend to update user profile
-    const response = await fetch('/api/user/profile', {
+    const backendUrl = import.meta.env.VITE_API_URL || 'https://laso.onrender.com';
+    const response = await fetch(`${backendUrl}/api/user/profile`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',

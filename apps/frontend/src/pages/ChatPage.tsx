@@ -42,7 +42,8 @@ const ChatPage: React.FC = () => {
                 const userId = await getUserFromSession();
                 setSenderId(userId);
 
-                const response = await fetch(`/api/chat/messages/${id}?userId=${userId}`);
+                const backendUrl = import.meta.env.VITE_API_URL || 'https://laso.onrender.com';
+                const response = await fetch(`${backendUrl}/api/chat/messages/${id}?userId=${userId}`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch messages');
                 }

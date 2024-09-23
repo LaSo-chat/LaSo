@@ -14,7 +14,8 @@ export async function startNewChat(contactId: string) {
         throw new Error('User ID not found');
     }
 
-    const response = await fetch('/api/chat/start', {
+    const backendUrl = import.meta.env.VITE_API_URL || 'https://laso.onrender.com';
+    const response = await fetch(`${backendUrl}/api/chat/start`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -43,7 +44,8 @@ export async function getContactsForUser() {
     const supabaseUserId = sessionData.session.user.id; // UUID from Supabase Auth
 
     // Make an API call to fetch contacts for the logged-in user using their Supabase ID
-    const response = await fetch(`/api/chat/contacts?userId=${supabaseUserId}`);
+    const backendUrl = import.meta.env.VITE_API_URL || 'https://laso.onrender.com';
+    const response = await fetch(`${backendUrl}/api/chat/contacts?userId=${supabaseUserId}`);
 
     if (!response.ok) {
         throw new Error('Failed to fetch contacts');
