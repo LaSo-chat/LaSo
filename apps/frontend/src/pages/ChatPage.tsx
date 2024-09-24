@@ -23,12 +23,14 @@ const ChatPage: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
 
-    // Reference for the chat messages container
-    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const lastMessageRef = useRef<HTMLDivElement>(null);
 
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    };
+    const scrollToBottom = useCallback(() => {
+        if (lastMessageRef.current) {
+            lastMessageRef.current.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, []);
 
     const handleNewMessage = useCallback((newMessage: Message) => {
         console.log('New message received:', newMessage);
@@ -49,7 +51,6 @@ const ChatPage: React.FC = () => {
                 }
                 const data = await response.json();
                 setMessages(data);
-                // scrollToBottom(); // Scroll to the bottom when the chat opens
 
                 await socketService.connect();
                 socketService.onMessage(handleNewMessage);
@@ -73,35 +74,45 @@ const ChatPage: React.FC = () => {
     const handleSendMessage = () => {
         if (message.trim() && senderId && id) {
             const newMessage: Message = {
-                id: Date.now(), // Temporary ID, will be replaced by server
+                id: Date.now(),
                 content: message,
                 sender: { supabaseId: senderId },
                 receiverId: parseInt(id, 10),
                 createdAt: new Date().toISOString()
             };
 
-            // Optimistically update UI
             setMessages(prevMessages => [...prevMessages, newMessage]);
-            // scrollToBottom(); // Scroll to the bottom when the chat opens
-
-            // Send message through socket
             socketService.sendMessage(message, parseInt(id, 10));
-
-            // Clear input
             setMessage('');
         }
     };
 
-    if (error) return <div>{error}</div>;
-
     useEffect(() => {
-        scrollToBottom(); // Scroll to the bottom whenever messages change
+        if (!isLoading) {
+            const timeoutId = setTimeout(() => {
+                scrollToBottom();
+                console.log('Attempted to scroll to bottom');
+            }, 100);
+
+            return () => clearTimeout(timeoutId);
+        }
+    }, [messages, isLoading, scrollToBottom]);
+
+    // Debug logging
+    useEffect(() => {
+        if (scrollContainerRef.current) {
+            console.log('Scroll container height:', scrollContainerRef.current.scrollHeight);
+            console.log('Scroll container client height:', scrollContainerRef.current.clientHeight);
+            console.log('Scroll position:', scrollContainerRef.current.scrollTop);
+        }
     }, [messages]);
 
+    if (error) return <div>{error}</div>;
+
     return (
-        <div className="flex flex-col min-h-screen">
+        <div className="flex flex-col h-screen">
             {/* Top Bar */}
-            <div className="fixed top-0 w-full bg-white shadow-md z-10 flex justify-between items-center p-4">
+            <div className="bg-white shadow-md z-10 flex justify-between items-center p-4">
                 <div className="flex items-center space-x-2">
                     <IoArrowBackOutline size={24} onClick={() => navigate(-1)} className="cursor-pointer" />
                     <h3 className="font-bold">Chat with {id}</h3>
@@ -109,25 +120,35 @@ const ChatPage: React.FC = () => {
             </div>
 
             {/* Chat Messages */}
-            {isLoading ? <Loader></Loader> : <div className="flex-1 my-40 p-4 overflow-y-auto">
-                {messages.map((msg, index) => (
-                    <div key={index} className={`flex ${msg.sender?.supabaseId === senderId ? 'justify-end' : 'justify-start'} mb-2`}>
-                        <div className={`max-w-xs p-3 rounded-lg ${msg.sender?.supabaseId === senderId ? 'bg-sky-400 text-white' : 'bg-gray-200 text-black'}`}>
-                            <p>{msg.content}</p>
-                            
-                            {msg.translatedContent && msg.sender?.supabaseId !== senderId && (<>
-                                <hr className="border-t border-gray-300 my-2" /><p className="text-sm text-gray-500 mt-1">{msg.translatedContent}</p>
-                            </>
-                            )}
-                        </div>
+            <div className="flex-1 overflow-hidden">
+                {isLoading ? (
+                    <Loader />
+                ) : (
+                    <div ref={scrollContainerRef} className="h-full overflow-y-auto px-4 py-2">
+                        {messages.map((msg, index) => (
+                            <div 
+                                key={index} 
+                                className={`flex ${msg.sender?.supabaseId === senderId ? 'justify-end' : 'justify-start'} mb-2`}
+                                ref={index === messages.length - 1 ? lastMessageRef : null}
+                            >
+                                <div className={`max-w-xs p-3 rounded-lg ${msg.sender?.supabaseId === senderId ? 'bg-sky-400 text-white' : 'bg-gray-200 text-black'}`}>
+                                    <p>{msg.content}</p>
+                                    
+                                    {msg.translatedContent && msg.sender?.supabaseId !== senderId && (
+                                        <>
+                                            <hr className="border-t border-gray-300 my-2" />
+                                            <p className="text-sm text-gray-500 mt-1">{msg.translatedContent}</p>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
                     </div>
-                ))}
-                <div ref={messagesEndRef} />
-            </div>}
-
+                )}
+            </div>
 
             {/* Bottom Input Area */}
-            <div className="fixed bottom-0 w-full bg-white p-4 shadow-lg flex items-center space-x-2">
+            <div className="bg-white p-4 shadow-lg flex items-center space-x-2">
                 <input
                     type="text"
                     value={message}
