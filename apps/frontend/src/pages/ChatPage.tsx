@@ -49,7 +49,7 @@ const ChatPage: React.FC = () => {
                 }
                 const data = await response.json();
                 setMessages(data);
-                scrollToBottom(); // Scroll to the bottom when the chat opens
+                // scrollToBottom(); // Scroll to the bottom when the chat opens
 
                 await socketService.connect();
                 socketService.onMessage(handleNewMessage);
@@ -82,7 +82,7 @@ const ChatPage: React.FC = () => {
 
             // Optimistically update UI
             setMessages(prevMessages => [...prevMessages, newMessage]);
-            scrollToBottom(); // Scroll to the bottom when the chat opens
+            // scrollToBottom(); // Scroll to the bottom when the chat opens
 
             // Send message through socket
             socketService.sendMessage(message, parseInt(id, 10));
@@ -93,6 +93,10 @@ const ChatPage: React.FC = () => {
     };
 
     if (error) return <div>{error}</div>;
+
+    useEffect(() => {
+        scrollToBottom(); // Scroll to the bottom whenever messages change
+    }, [messages]);
 
     return (
         <div className="flex flex-col min-h-screen">
