@@ -160,61 +160,68 @@ async createContact(userId: number, receiverId: number) {
 
 // Get the contacts for the logged-in user
 async getContactsForUser(supabaseId: string) {
-  // First, find the user based on their Supabase UUID
-  const user = await this.prisma.user.findUnique({
-    where: { supabaseId: supabaseId }, // Query based on Supabase UUID (userId in Prisma)
-  });
+  try {
+    const user = await this.prisma.user.findUnique({
+      where: { supabaseId: supabaseId },
+    });
 
-  if (!user) {
-    throw new Error('User not found');
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    const contacts = await this.prisma.contact.findMany({
+      where: {
+        OR: [
+          { userId: user.id },
+          { receiverId: user.id },
+        ],
+      },
+      include: {
+        user: true,
+        receiver: true
+      },
+    });
+
+    const filteredContacts = contacts.filter(
+      (contact) => contact.receiverId !== user.id
+    );
+
+    const contactsWithLastMessage = await Promise.all(
+      filteredContacts.map(async (contact) => {
+        try {
+          // console.log(contact,'-------------------contact');
+          
+          const lastMessage = await this.prisma.message.findFirst({
+            where: {
+              OR: [
+                { senderId: contact.userId, receiverId: contact.receiverId },
+                { senderId: contact.receiverId, receiverId: contact.userId },
+              ],
+            },
+            orderBy: {
+              createdAt: 'desc',
+            },
+          });
+
+          return {
+            ...contact,
+            lastMessage,
+          };
+        } catch (error) {
+          console.log(`Error fetching last message for contact ${contact.id}:`, error);
+          return {
+            ...contact,
+            lastMessage: null,
+          };
+        }
+      })
+    );
+
+    return contactsWithLastMessage;
+  } catch (error) {
+    console.log('Error in getContactsForUser:', error);
+    throw error;
   }
-
-  // Find contacts where the user is either the contact or user in the Contact relationship
-  const contacts = await this.prisma.contact.findMany({
-    where: {
-      OR: [
-        { userId: user.id }, // Fetch where user is the primary contact
-        { receiverId: user.id }, // Fetch where user is the secondary contact
-      ],
-    },
-    include: {
-      user: true,   // Include related user (contact's details)
-      receiver: true // Include related contact's details
-    },
-  });
-
-  // Filter out the contacts where the logged-in user is listed as the contact
-  const filteredContacts = contacts.filter(
-    (contact) => contact.receiverId !== user.id
-  );
-
-  // Fetch the last message for each contact
-  const contactsWithLastMessage = await Promise.all(
-    filteredContacts.map(async (contact) => {
-      const lastMessage = await this.prisma.message.findFirst({
-        where: {
-          OR: [
-            { senderId: contact.userId, receiverId: contact.receiverId },
-            { senderId: contact.receiverId, receiverId: contact.userId },
-          ],
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-      });
-
-      return {
-        ...contact,
-        lastMessage,
-        hasUnreadMessages: lastMessage ? !lastMessage.isRead && lastMessage.receiverId === user.id : false,
-      };
-    })
-  );
-
-  // console.log(contactsWithLastMessage,'contactsWithLastMessage');
-  
-
-  return contactsWithLastMessage;
 }
 
 
