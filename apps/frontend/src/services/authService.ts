@@ -1,5 +1,7 @@
 // src/services/authService.ts
 import { createClient, SupabaseClient, Session, User } from '@supabase/supabase-js';
+import { Dispatch } from 'redux';
+import { logout } from '../app/slices/authSlice';
 
 const supabaseUrl: string = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey: string = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -33,9 +35,16 @@ export const getCurrentUser = async () => {
     return data.session?.user || null;
 };
 
-export const signOut = async () => {
+export const signOut = async (dispatch: Dispatch): Promise<void> => {
     const { error } = await supabase.auth.signOut();
+    
     if (error) throw error;
+
+    // Dispatch the logout action to update the Redux state
+    dispatch(logout());
+
+    // Clear local storage or persistRoot object
+    localStorage.removeItem('persist:root'); // Adjust the key as necessary
 };
 
 export async function getUserFromSession() {

@@ -3,12 +3,14 @@ import React, { useState, useEffect } from 'react';
 import { IoHomeOutline, IoChatbubbleEllipsesOutline, IoPersonOutline, IoLogOutOutline } from 'react-icons/io5'; // Icons
 import { useNavigate } from 'react-router-dom';
 import { signOut } from '../services/authService';
+import { useDispatch } from 'react-redux';
 import { getUserProfile, updateUserProfile } from '../services/userService';
 import Loader from '@/components/Loader';
 
 const AccountPage: React.FC = () => {
     const [showModal, setShowModal] = useState(false); // State to control modal visibility
     const [isLoading, setIsLoading] = useState(true);
+    const dispatch = useDispatch();
     const navigate = useNavigate();
 
     const handleNewChatClick = () => {
@@ -56,12 +58,13 @@ const AccountPage: React.FC = () => {
         }
     };
 
-    const handleLogout = async () => {
+    const handleLogout = async (): Promise<void> => {
         try {
-            await signOut(); // Supabase signOut call
-            navigate('/login'); // Redirect to login after logout
+            await signOut(dispatch); // Pass dispatch as an argument
+            navigate('/login'); // Redirect after logging out
         } catch (error) {
-            console.error('Failed to log out:', error);
+            console.error('Failed to log out:', (error as Error).message);
+            alert('Failed to log out. Please try again.');
         }
     };
 
