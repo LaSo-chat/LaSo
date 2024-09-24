@@ -68,11 +68,15 @@ const Home: React.FC = () => {
             try {
                 const newChat = await startNewChat(newChatId);
                 if (newChat) {
-                    setChats((prevChats) => [...prevChats, newChat]);
+                    // setChats((prevChats) => [...prevChats, newChat]);
+                    alert('Successfully Connected')    
                     closeDrawer();
+                
+                    window.location.reload();
                 }
             } catch (error) {
                 console.error("Failed to start new chat:", error);
+                alert(error)
             }
         }
     };

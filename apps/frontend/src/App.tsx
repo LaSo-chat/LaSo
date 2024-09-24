@@ -20,16 +20,18 @@ const App: React.FC = () => {
     return (
         <Routes>
             {/* Display LandingPage as the starting page */}
-            <Route path="/" element={<LandingPage />} />
             
             {/* Protected routes based on authentication */}
             <Route path="/home" element={isAuthenticated ? <Home /> : <Navigate to="/login" />} />
-            <Route path="/profile-step-1" element={<ProfileStep1 />} />
-            <Route path="/profile-step-2" element={<ProfileStep2 />} />
-            <Route path="/chat/:id" element={<ChatPage />} />
-            <Route path="/account" element={<AccountPage />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<SignUp />} />
+            <Route path="/" element={isAuthenticated ? <LandingPage /> : <Navigate to="/login" />} />
+            <Route path="/profile-step-1" element={isAuthenticated ? <ProfileStep1 /> : <Navigate to="/login" />} />
+            <Route path="/profile-step-2" element={isAuthenticated ? <ProfileStep2 /> : <Navigate to="/login" />} />
+            <Route path="/chat/:id" element={isAuthenticated ? <ChatPage /> : <Navigate to="/login" />} />
+            <Route path="/account" element={isAuthenticated ? <AccountPage /> : <Navigate to="/login" />} />
+
+           {/* Redirect to home if authenticated, otherwise show login/signup */}
+           <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/home" />} />
+            <Route path="/signup" element={!isAuthenticated ? <SignUp /> : <Navigate to="/home" />} />
         </Routes>
     );
 };

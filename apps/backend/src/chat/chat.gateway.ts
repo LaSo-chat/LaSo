@@ -5,9 +5,13 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @WebSocketGateway({
   cors: {
-    origin: '*', // Allow all origins or set your frontend URL
+    origin: ['https://laso-frontend.vercel.app', 'http://localhost:5173'],
+    methods: ['GET', 'POST'],
+    credentials: true,
   },
+  transports: ['websocket'],
 })
+
 export class ChatGateway {
   @WebSocketServer() server: Server;
   private userSocketMap: Map<string, string> = new Map();
@@ -15,7 +19,8 @@ export class ChatGateway {
   constructor(
     private readonly chatService: ChatService,
     private readonly prisma: PrismaService, 
-  ) {}
+  ) {
+  }
 
   @SubscribeMessage('sendMessage')
   async handleMessage(
@@ -57,6 +62,7 @@ export class ChatGateway {
       }
 
       const message = await this.chatService.createMessage(sender.id, receiverId, content);
+    
 
      // Emit message to specific clients
      const senderSocketId = this.userSocketMap.get(senderId);
@@ -65,6 +71,8 @@ export class ChatGateway {
     //  if (senderSocketId) {
     //    this.server.to(senderSocketId).emit('message', message);
     //  }
+
+    
      if (receiverSocketId) {
        this.server.to(receiverSocketId).emit('message', message);
      }

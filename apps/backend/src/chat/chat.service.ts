@@ -11,20 +11,49 @@ export class ChatService {
     key: process.env.GOOGLE_TRANSLATE_API_KEY // replace with your actual API key
   });
 
-  // Create a message between two users
-  async createMessage(senderId: number, receiverId: number, content: string) {
-    console.log(senderId,"senderId");
-    console.log(receiverId,"receiverId");
-    console.log(content,"content");
-    
-    return this.prisma.message.create({
-      data: {
-        senderId,
-        receiverId,
-        content,
-      },
-    });
+// Create a message between two users with translation support
+async createMessage(senderId: number, receiverId: number, content: string) {
+  console.log(senderId, "senderId");
+  console.log(receiverId, "receiverId");
+  console.log(content, "content");
+
+  // Step 1: Create the message
+  const message = await this.prisma.message.create({
+    data: {
+      senderId,
+      receiverId,
+      content,
+    },
+  });
+
+  // Step 2: Fetch the receiver's preferred language
+  const receiver = await this.prisma.user.findUnique({
+    where: { id: receiverId },
+  });
+
+  if (!receiver) {
+    throw new Error('Receiver not found');
   }
+
+  // Step 3: Check if the message needs to be translated (if the receiver has a different preferred language)
+  let translatedContent = content;  // Default to original content
+
+  if (senderId !== receiverId && receiver.preferredLang) {
+    // Translate the content if the sender and receiver are different and the receiver has a preferred language
+    const [translatedText] = await this.translate.translate(
+      content,
+      receiver.preferredLang
+    );
+    translatedContent = translatedText;
+  }
+
+  // Step 4: Add the translated content to the message object
+  const messageWithTranslation = { ...message, translatedContent };
+
+  console.log(messageWithTranslation, "messageWithTranslation");
+
+  return messageWithTranslation;
+}
 
 // Get messages between two users (supabaseId for sender, internal ID for receiver)
 async getMessages(supabaseId: string, contactId: number) {
@@ -182,7 +211,7 @@ async getContactsForUser(supabaseId: string) {
     })
   );
 
-  console.log(contactsWithLastMessage,'contactsWithLastMessage');
+  // console.log(contactsWithLastMessage,'contactsWithLastMessage');
   
 
   return contactsWithLastMessage;

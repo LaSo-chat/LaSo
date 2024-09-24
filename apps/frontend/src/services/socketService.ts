@@ -1,7 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 import { supabase } from './authService';
 
-const SOCKET_URL = 'http://localhost:3000';
+const SOCKET_URL = import.meta.env.VITE_WEBSOCKET_URL || 'https://laso.onrender.com';
 
 interface Message {
   id: number;
@@ -34,6 +34,10 @@ class SocketService {
         }
 
         this.socket = io(SOCKET_URL, {
+          transports: ['websocket'],
+  // withCredentials: true,
+  // autoConnect: false,
+  // secure: true,
           query: { userId: this.userId }
         });
 
