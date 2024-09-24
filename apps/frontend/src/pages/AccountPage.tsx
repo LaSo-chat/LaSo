@@ -25,13 +25,26 @@ const AccountPage: React.FC = () => {
         const fetchUserData = async () => {
             try {
                 setIsLoading(true);
+                const storedUserProfile = localStorage.getItem('userProfile');
+            if (!storedUserProfile) {
                 const userData = await getUserProfile(); // Fetch the user's profile from Supabase
                 if (userData) {
                     setFullName(userData.fullName);
                     setEmail(userData.email);
                     setMobileNumber(userData.phone);
                     setPreferredLanguage(userData.preferredLang);
+                    
+                    // Optionally, save the user profile to local storage for future use
+                    localStorage.setItem('userProfile', JSON.stringify(userData));
                 }
+            } else {
+                // If user profile exists, parse and set state from local storage
+                const parsedUserProfile = JSON.parse(storedUserProfile);
+                setFullName(parsedUserProfile.fullName);
+                setEmail(parsedUserProfile.email);
+                setMobileNumber(parsedUserProfile.phone);
+                setPreferredLanguage(parsedUserProfile.preferredLang);
+            }
             } catch (error) {
                 console.error('Error fetching user profile:', error);
             } finally {

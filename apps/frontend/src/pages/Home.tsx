@@ -7,6 +7,7 @@ import {
     DrawerContent,
 } from '@/components/ui/drawer';
 import { startNewChat, getContactsForUser } from '../services/chatService';
+import { getUserProfile } from '../services/userService';
 import Avatar from 'boring-avatars';
 import moment from 'moment';
 import Loader from '@/components/Loader';
@@ -31,8 +32,25 @@ const Home: React.FC = () => {
     const [newChatId, setNewChatId] = useState('');
     const [chats, setChats] = useState<Chat[]>([]);
     const [loading, setLoading] = useState(true);
+    const [userFullName, setUserFullName] = useState('');
+    // const [searchQuery, setSearchQuery] = useState('');
     const navigate = useNavigate();
     
+    useEffect(() => {
+        async function fetchUserProfile() {
+            try {
+                const userData = await getUserProfile(); // Fetch user's profile from Supabase
+                localStorage.setItem('userProfile', JSON.stringify(userData));
+                if (userData) {
+                    setUserFullName(userData.fullName); // Set user's full name
+                }
+            } catch (error) {
+                console.error('Error fetching user profile:', error);
+            }
+        }
+
+        fetchUserProfile(); // Call the function to fetch user profile
+    }, []);
 
     useEffect(() => {
         async function fetchContacts() {
@@ -90,16 +108,30 @@ const Home: React.FC = () => {
         return date.format('MM/DD/YYYY');
     };
 
+    // Filter chats based on search query
+    // const filteredChats = chats.filter(chat => 
+    //     chat.receiver?.fullName?.toLowerCase().includes(searchQuery.toLowerCase())
+    // );
+
     return (
         <div className="flex flex-col min-h-screen bg-gray-100">
             {/* Top bar */}
             <div className="fixed top-0 w-full bg-white shadow-md z-10">
                 <div className="p-4 flex justify-between items-center">
-                    <h1 className="text-2xl font-bold">Mengobrol</h1>
-                    <IoSearch size={24} />
+                    <h1 className="text-2xl font-bold">Hello, {userFullName}</h1>
                 </div>
-                <div className="px-4 pb-2">
-                    <h2 className="text-xl font-bold">Chats</h2>
+                <div className="px-4 pb-2 flex justify-between items-center">
+                    <h2 className="text-xl font-bold">Conversations</h2>
+                    <IoSearch size={24} />
+                    {/* <div id='search-box' className="flex items-center border border-gray-300 rounded-full p-2">
+                        <input
+                            type="text"
+                            placeholder="Search chats..."
+                            className="outline-none border-none ml-2"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)} // Update search query on input change
+                        />
+                    </div> */}
                 </div>
             </div>
 
@@ -128,7 +160,7 @@ const Home: React.FC = () => {
                                 ) : (
                                     <Avatar
                                         size={48}
-                                        name={chat.id || chat.receiver?.fullName || 'Unknown'}
+                                        name={chat.receiver?.fullName || 'Unknown'}
                                         colors={["#e81e4a", "#0b1d21", "#078a85", "#68baab", "#edd5c5"]}
                                         variant="beam"
                                     />
@@ -165,26 +197,30 @@ const Home: React.FC = () => {
 
             {/* Drawer for New Chat */}
             <Drawer open={isDrawerOpen} onClose={closeDrawer}>
-                <DrawerContent>
-                    <div className="flex justify-between items-center p-4">
-                        <h2 className="text-lg font-semibold">New Chat</h2>
-                        <IoClose size={24} className="cursor-pointer" onClick={closeDrawer} />
-                    </div>
-                    <div className="p-6 space-y-4">
-                        <input
-                            type="email"
-                            required
-                            value={newChatId}
-                            onChange={(e) => setNewChatId(e.target.value)}
-                            placeholder="Enter User Email"
-                            className="w-full p-3 border rounded-full"
-                        />
-                        <button onClick={handleCreateChat} className="bg-sky-500 text-white p-3 rounded-full w-full">
-                            Create Chat
-                        </button>
-                    </div>
-                </DrawerContent>
-            </Drawer>
+    <DrawerContent>
+        <div className="flex justify-between items-center p-4">
+            <h2 className="text-lg font-semibold">New Chat</h2>
+            <IoClose size={24} className="cursor-pointer" onClick={closeDrawer} />
+        </div>
+        <div className="p-6 space-y-4">
+            <p className="text-gray-600">
+                Add new friends to chat! Enter their email address to start a conversation.
+            </p>
+            <input
+                type="email"
+                required
+                value={newChatId}
+                onChange={(e) => setNewChatId(e.target.value)}
+                placeholder="Enter User Email"
+                className="w-full p-3 border rounded-full"
+            />
+            <button onClick={handleCreateChat} className="bg-sky-500 text-white p-3 rounded-full w-full">
+                Create Chat
+            </button>
+        </div>
+    </DrawerContent>
+</Drawer>
+
         </div>
     );
 };
