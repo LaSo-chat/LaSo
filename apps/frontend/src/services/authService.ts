@@ -45,6 +45,7 @@ export const signOut = async (dispatch: Dispatch): Promise<void> => {
 
     // Clear local storage or persistRoot object
     localStorage.removeItem('persist:root'); // Adjust the key as necessary
+    localStorage.removeItem('userProfile'); // Adjust the key as necessary
 };
 
 export async function getUserFromSession() {
