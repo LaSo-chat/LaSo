@@ -59,7 +59,8 @@ const AccountPage: React.FC = () => {
         const updatedProfile = {
             fullName,
             phone: mobileNumber,
-            preferredLang: preferredLanguage
+            preferredLang: preferredLanguage,
+            dateOfBirth: "2024-09-25T00:00:00.000Z"
         };
 
         try {
@@ -97,6 +98,10 @@ const AccountPage: React.FC = () => {
         { value: 'zh', label: 'Chinese' },
         { value: 'hi', label: 'Hindi' },
         { value: 'ar', label: 'Arabic' },
+        { value: 'tl', label: 'Tagalog' },
+        { value: 'tr', label: 'Turkish' },
+        { value: 'it', label: 'Italian' },
+        { value: 'te', label: 'Telugu' },
         // Add more languages as needed
     ];
 

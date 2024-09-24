@@ -43,7 +43,6 @@ export class UserController {
                 fullName: profileData.fullName,
                 phone: profileData.phone,
                 country: profileData.country,
-                dateOfBirth: new Date(profileData.dateOfBirth),
                 preferredLang: profileData.preferredLang,
             },
             create: {

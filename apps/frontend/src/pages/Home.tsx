@@ -82,9 +82,11 @@ const Home: React.FC = () => {
     };
 
     const handleCreateChat = async () => {
-        if (newChatId.trim()) {
+        if (newChatId.toLowerCase().trim()) {
+            let chatid = newChatId.toLowerCase().trim();
+            console.log(chatid,"----------------------------chatid");
             try {
-                const newChat = await startNewChat(newChatId);
+                const newChat = await startNewChat(chatid);
                 if (newChat) {
                     // setChats((prevChats) => [...prevChats, newChat]);
                     alert('Successfully Connected')    
