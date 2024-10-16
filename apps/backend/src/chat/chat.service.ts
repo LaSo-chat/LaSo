@@ -2,6 +2,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TranslationServiceClient } from '@google-cloud/translate'; // Import v3 client
+import { Credentials } from 'google-auth-library';
 
 @Injectable()
 export class ChatService {
@@ -9,7 +10,8 @@ export class ChatService {
 
   constructor(private prisma: PrismaService) {
     // Initialize the translation client
-    this.translationClient = new TranslationServiceClient();
+    const credentials: Credentials = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS);
+    this.translationClient = new TranslationServiceClient({ credentials });
   }
 
   // Create a message between two users with translation support
