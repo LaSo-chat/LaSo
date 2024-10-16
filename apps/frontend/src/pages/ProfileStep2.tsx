@@ -41,7 +41,11 @@ const ProfileStep2: React.FC = () => {
         { code: 'de', name: 'German' },
         { code: 'zh', name: 'Chinese' },
         { code: 'it', name: 'Italian' },
+        { code: 'tr', name: 'Turkish' },
+        { code: 'tl', name: 'Tagalog' },
+        { code: 'hi', name: 'Hindi' },
         { code: 'ar', name: 'Arabic' },
+        { code: 'te', name: 'Telugu' },
         // Add more languages here as needed
     ];
 

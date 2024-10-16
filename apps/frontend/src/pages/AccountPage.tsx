@@ -229,7 +229,7 @@ const AccountPage: React.FC = () => {
                         <IoChatbubbleEllipsesOutline size={20} />
                         <span>New Chat</span>
                     </button>
-                    <IoPersonOutline size={24} className="cursor-pointer" onClick={() => navigate('/account')} />
+                    <IoPersonOutline size={24} className="cursor-pointer text-sky-700" onClick={() => navigate('/account')} />
                 </div>
             </div>
         </div>

@@ -1,6 +1,6 @@
 // src/pages/Home.tsx
 import React, { useState, useEffect } from 'react';
-import { IoSearch, IoChatbubbleEllipsesOutline, IoPersonOutline, IoHomeOutline, IoClose } from 'react-icons/io5';
+import { IoSearch, IoChatbubbleEllipsesOutline, IoPersonOutline, IoHomeOutline, IoClose, IoEllipse } from 'react-icons/io5';
 import { useNavigate } from 'react-router-dom';
 import {
     Drawer,
@@ -15,14 +15,16 @@ import { useLocation } from 'react-router-dom';
 
 interface Chat {
     id: string;
+    userId?: number;
     receiver: {
         image?: string;
         fullName?: string;
-        unread?: number;
     };
     lastMessage?: {
         content?: string;
         createdAt?: string;
+        isRead?: boolean;
+        receiverId?: number;
     };
 }
 
@@ -32,7 +34,7 @@ const Home: React.FC = () => {
     const [newChatId, setNewChatId] = useState('');
     const [chats, setChats] = useState<Chat[]>([]);
     const [loading, setLoading] = useState(true);
-    const [userFullName, setUserFullName] = useState('');
+    // const [userFullName, setUserFullName] = useState('');
     // const [searchQuery, setSearchQuery] = useState('');
     const navigate = useNavigate();
     
@@ -41,9 +43,9 @@ const Home: React.FC = () => {
             try {
                 const userData = await getUserProfile(); // Fetch user's profile from Supabase
                 localStorage.setItem('userProfile', JSON.stringify(userData));
-                if (userData) {
-                    setUserFullName(userData.fullName); // Set user's full name
-                }
+                // if (userData) {
+                //     setUserFullName(userData.fullName); // Set user's full name
+                // }
             } catch (error) {
                 console.error('Error fetching user profile:', error);
             }
@@ -89,9 +91,8 @@ const Home: React.FC = () => {
                 const newChat = await startNewChat(chatid);
                 if (newChat) {
                     // setChats((prevChats) => [...prevChats, newChat]);
-                    alert('Successfully Connected')    
+                    alert('Successfully Connected')
                     closeDrawer();
-                
                     window.location.reload();
                 }
             } catch (error) {
@@ -111,7 +112,7 @@ const Home: React.FC = () => {
     };
 
     // Filter chats based on search query
-    // const filteredChats = chats.filter(chat => 
+    // const filteredChats = chats.filter(chat =>
     //     chat.receiver?.fullName?.toLowerCase().includes(searchQuery.toLowerCase())
     // );
 
@@ -119,10 +120,11 @@ const Home: React.FC = () => {
         <div className="flex flex-col min-h-screen bg-gray-100">
             {/* Top bar */}
             <div className="fixed top-0 w-full bg-white shadow-md z-10">
-                <div className="p-4 flex justify-between items-center">
-                    <h1 className="text-2xl font-bold">Hello, {userFullName}</h1>
+                <div className="p-3 flex justify-between items-center">
+                    {/* <h1 className="text-2xl font-bold">Hello, {userFullName}</h1> */}
+                    <h1 className="font-poppins italic text-4xl font-bold">LaSo</h1>
                 </div>
-                <div className="px-4 pb-2 flex justify-between items-center">
+                <div className="px-3 pb-2 flex justify-between items-center">
                     <h2 className="text-xl font-bold">Conversations</h2>
                     <IoSearch size={24} />
                     {/* <div id='search-box' className="flex items-center border border-gray-300 rounded-full p-2">
@@ -138,7 +140,7 @@ const Home: React.FC = () => {
             </div>
 
             {/* Scrollable Chats Section */}
-            <div className="flex-1 mt-28 overflow-y-auto p-4">
+            <div className="flex-1 mt-28 overflow-y-auto p-3">
                 {loading ? (
                     <Loader />
                 ) : chats.length === 0 ? (
@@ -147,15 +149,14 @@ const Home: React.FC = () => {
                     chats.map((chat) => (
                         <div
                             key={chat.id}
-                            className="flex justify-between items-center mb-4"
+                            className={`flex justify-between items-center  mb-4 relative`}
                             onClick={() => navigate(`/chat/${chat.id}`, {
                                 state: {
-                                    receiverName: chat.receiver?.fullName || "Unknown User",
-                                    receiverImage: chat.receiver?.image,
-                                    lastMessage: chat.lastMessage?.content || "No messages yet"
+                                    receiver: chat.receiver
                                 }
                             })}
                         >
+                            {(!chat.lastMessage?.isRead && chat.lastMessage?.receiverId === chat.userId) && <IoEllipse size={15} className='absolute top-0 left-0 text-sky-600 bg-white rounded-full' />}
                             <div className="flex items-center space-x-4">
                                 {chat.receiver?.image ? (
                                     <img src={chat.receiver.image} alt={chat.receiver.fullName} className="w-12 h-12 rounded-full" />
@@ -169,16 +170,15 @@ const Home: React.FC = () => {
                                 )}
                                 <div>
                                     <h3 className="font-semibold">{chat.receiver?.fullName || "Unknown User"}</h3>
-                                    <p className="text-gray-500 text-sm truncate w-48 whitespace-nowrap">{chat?.lastMessage?.content || "No messages yet"}</p>
+                                    <p className={`text-sm truncate w-48 whitespace-nowrap ${!chat.lastMessage?.isRead && chat.lastMessage?.receiverId === chat.userId ? "font-extrabold text-black" : 'text-gray-500'}`}>{chat?.lastMessage?.content || "No messages yet"}</p>
                                 </div>
                             </div>
-                            <div className="text-right">
+                            <div className="flex flex-col justify-end items-end">
                                 <p className="text-sm text-gray-400">{formatDate(chat.lastMessage?.createdAt)}</p>
-                                {chat.receiver?.unread && chat.receiver.unread > 0 && (
-                                    <span className="text-xs text-white bg-sky-500 rounded-full px-2 py-1">
-                                        {chat.receiver.unread}
-                                    </span>
-                                )}
+                                {/* {chat.receiver?.unread && chat.receiver.unread > 0 && ( */}
+                                    {/* <span className="text-xs text-blue-700 rounded-full px-2 py-1"> */}
+                                   {/* </span> */}
+                                {/* )} */}
                             </div>
                         </div>
                     ))
@@ -216,7 +216,7 @@ const Home: React.FC = () => {
                 placeholder="Enter User Email"
                 className="w-full p-3 border rounded-full"
             />
-            <button onClick={handleCreateChat} className="bg-sky-500 text-white p-3 rounded-full w-full">
+            <button onClick={handleCreateChat}  className="bg-sky-500 text-white p-3 rounded-full w-full">
                 Create Chat
             </button>
         </div>

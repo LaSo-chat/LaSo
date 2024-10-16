@@ -56,3 +56,36 @@ export async function getContactsForUser() {
     
     return contacts;
 }
+
+
+// This function marks all messages as read for a given chat ID
+export async function markMessagesAsRead(chatId: number) {
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+
+    if (sessionError || !sessionData.session) {
+        throw new Error('User is not authenticated');
+    }
+
+    const userId = sessionData.session.user?.id;
+
+    if (!userId) {
+        throw new Error('User ID not found');
+    }
+
+    const backendUrl = import.meta.env.VITE_API_URL || 'https://laso.onrender.com';
+    const response = await fetch(`${backendUrl}/api/chat/markMessagesAsRead`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${sessionData.session.access_token}`,
+        },
+        body: JSON.stringify({ chatId, userId }), // Send chatId and userId to mark messages as read
+    });
+
+    const result = await response.json();
+    if (!response.ok) {
+        throw new Error(result.message || 'Failed to mark messages as read');
+    }
+
+    return result;
+}

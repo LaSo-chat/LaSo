@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { IoArrowBackOutline, IoSendOutline } from 'react-icons/io5';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { getUserFromSession } from '../services/authService';
 import { socketService } from '../services/socketService';
 import Loader from '@/components/Loader';
+import { markMessagesAsRead } from '@/services/chatService';
 
 interface Message {
     id: number;
@@ -11,8 +12,13 @@ interface Message {
     sender?: { supabaseId: string };
     receiverId: number;
     createdAt: string;
+    isRead?: boolean;
     translatedContent?: string;
 }
+
+interface LocationState {
+    receiver: any;
+  }
 
 const ChatPage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -22,6 +28,8 @@ const ChatPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
+    const location = useLocation();
+    const { receiver } = location.state as LocationState;
 
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const lastMessageRef = useRef<HTMLDivElement>(null);
@@ -55,6 +63,9 @@ const ChatPage: React.FC = () => {
                 await socketService.connect();
                 socketService.onMessage(handleNewMessage);
 
+                // Mark messages as read when the chat opens
+                await updateMessagesAsRead();
+
             } catch (error) {
                 console.error('Error setting up chat:', error);
                 setError('Failed to load chat. Please try again.');
@@ -81,11 +92,38 @@ const ChatPage: React.FC = () => {
                 createdAt: new Date().toISOString()
             };
 
+            console.log("newMessage----------------", newMessage);
+
             setMessages(prevMessages => [...prevMessages, newMessage]);
             socketService.sendMessage(message, parseInt(id, 10));
             setMessage('');
         }
     };
+
+    const updateMessagesAsRead = useCallback(async () => {
+        if (!id) {
+            console.warn('Chat ID is undefined, skipping markMessagesAsRead');
+            return;
+        }
+        const chatId = Number(id); // Convert id to a number
+        if (isNaN(chatId)) {
+            console.error('Invalid chat ID:', id);
+            return;
+        }
+        try {
+            await markMessagesAsRead(chatId); // Call API to mark messages as read
+            // Update state locally without expecting new messages
+            setMessages(prevMessages => 
+                prevMessages.map(msg => ({
+                    ...msg,
+                    isRead: true,
+                }))
+            );
+        } catch (error) {
+            console.error('Failed to mark messages as read:', error);
+        }
+    }, [id]);
+    
 
     useEffect(() => {
         if (!isLoading) {
@@ -112,19 +150,19 @@ const ChatPage: React.FC = () => {
     return (
         <div className="flex flex-col h-screen">
             {/* Top Bar */}
-            <div className="bg-white shadow-md z-10 flex justify-between items-center p-4">
+            <div className="bg-white shadow-md z-10 flex justify-between items-center p-4 sticky top-0">
                 <div className="flex items-center space-x-2">
                     <IoArrowBackOutline size={24} onClick={() => navigate(-1)} className="cursor-pointer" />
-                    <h3 className="font-bold">Chat with {id}</h3>
+                    <h3 className="font-bold">Chat with {receiver.fullName}</h3>
                 </div>
             </div>
 
             {/* Chat Messages */}
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 overflow-y-auto">
                 {isLoading ? (
                     <Loader />
                 ) : (
-                    <div ref={scrollContainerRef} className="h-full overflow-y-auto px-4 py-2">
+                    <div ref={scrollContainerRef} className="px-4 py-2 pb-16">
                         {messages.map((msg, index) => (
                             <div 
                                 key={index} 
@@ -133,7 +171,6 @@ const ChatPage: React.FC = () => {
                             >
                                 <div className={`max-w-xs p-3 rounded-lg ${msg.sender?.supabaseId === senderId ? 'bg-sky-400 text-white' : 'bg-gray-200 text-black'}`}>
                                     <p>{msg.content}</p>
-                                    
                                     {msg.translatedContent && msg.sender?.supabaseId !== senderId && (
                                         <>
                                             <hr className="border-t border-gray-300 my-2" />
@@ -148,7 +185,7 @@ const ChatPage: React.FC = () => {
             </div>
 
             {/* Bottom Input Area */}
-            <div className="bg-white p-4 shadow-lg flex items-center space-x-2">
+            <div className="bg-white p-4 shadow-lg flex items-center space-x-2 sticky bottom-0">
                 <input
                     type="text"
                     value={message}

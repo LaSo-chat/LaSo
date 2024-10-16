@@ -39,4 +39,28 @@ export class ChatController {
     // Create a relationship between the users in the contacts table
     return this.chatService.createContact(user.id, contact.id); // Using database IDs for relationship
   }
+
+
+  @Post('markMessagesAsRead')
+  async markMessagesAsRead(@Body() body: { userId: string; chatId: number }) {
+    const { userId, chatId } = body;
+
+    // Verify if the user exists
+    const user = await this.prisma.user.findUnique({ where: { supabaseId: userId } });
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    // Retrieve the receiverId from the Contact table
+    const contact = await this.prisma.contact.findUnique({
+      where: { id: chatId },
+    });
+
+    if (!contact || contact.userId !== user.id) {
+      throw new UnauthorizedException('Invalid contact or unauthorized access');
+    }
+
+    // Call the service to mark messages as read using the user and receiver IDs
+    return this.chatService.markMessagesAsRead(user.id, contact.receiverId);
+  }
 }
