@@ -57,69 +57,75 @@ export class ChatService {
     return messageWithTranslation;
   }
 
-  // Get messages between two users (supabaseId for sender, internal ID for receiver)
-  async getMessages(supabaseId: string, contactId: number) {
-    // Step 1: Fetch the internal user ID using Supabase UUID
-    const user = await this.prisma.user.findUnique({
-      where: { supabaseId: supabaseId }, 
-    });
+  // Get messages between two users (Supabase ID for sender, internal ID for receiver)
+async getMessages(supabaseId: string, contactId: number, offset: number = 0) {
+  // Step 1: Fetch the internal user ID using the Supabase UUID
+  const user = await this.prisma.user.findUnique({
+    where: { supabaseId },
+  });
 
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
+  console.log(offset,"----------------------offset");
+  
 
-    const senderId = user.id; // Get the internal user ID
-
-    // Step 2: Retrieve the contact relationship
-    const contactRelation = await this.prisma.contact.findFirst({
-      where: { userId: +senderId, id: +contactId },
-      include: { receiver: true }  // Include receiver information
-    });
-
-    if (!contactRelation) {
-      throw new NotFoundException('No contact relationship found between users.');
-    }
-
-    // Step 3: Use the relationship to fetch messages between sender and receiver
-    const messages = await this.prisma.message.findMany({
-      where: {
-        OR: [
-          { senderId, receiverId: +contactRelation.receiverId },  // User is sender
-          { senderId: contactRelation.receiverId, receiverId: +senderId },  // User is receiver
-        ],
-      },
-      orderBy: {
-        createdAt: 'asc',  // Order messages by the time of creation
-      },
-      include: {
-        sender: { select: { supabaseId: true } }, // Include sender's Supabase UUID
-        receiver: { select: { supabaseId: true } } // Include receiver's Supabase UUID
-      },
-    });
-
-    const receiver = await this.prisma.user.findUnique({
-      where: { id: contactRelation.receiverId },
-    });
-
-    console.log(receiver, "messages----------------------");
-    console.log(messages, "messages----------------------");
-
-    const translatedMessages = await Promise.all(
-      messages.map(async (msg) => {
-        if (msg.senderId != senderId) {
-          const [translation] = await this.translationClient.translateText({
-            contents: [msg.content],
-            targetLanguageCode: user.preferredLang,
-            parent: `projects/${process.env.GOOGLE_CLOUD_PROJECT}/locations/global`, // Add your Google Cloud project ID
-          });
-          return { ...msg, translatedContent: translation.translations[0].translatedText };
-        }
-        return msg;
-      })
-    );
-
-    return translatedMessages;
+  if (!user) {
+    throw new NotFoundException('User not found');
   }
+
+  const senderId = user.id; // Internal user ID
+
+  // Step 2: Retrieve the contact relationship
+  const contactRelation = await this.prisma.contact.findFirst({
+    where: { userId: senderId, id: +contactId },
+    include: { receiver: true }, // Include receiver information
+  });
+
+  if (!contactRelation) {
+    throw new NotFoundException('No contact relationship found between users.');
+  }
+
+  const receiverId = contactRelation.receiverId;
+
+  // Step 3: Fetch the latest 50 messages with pagination
+  const messages = await this.prisma.message.findMany({
+    where: {
+      OR: [
+        { senderId, receiverId }, // Sender is the user
+        { senderId: receiverId, receiverId: senderId }, // Receiver is the user
+      ],
+    },
+    orderBy: { createdAt: 'desc' }, // Get the latest messages first
+    skip: offset, // Pagination offset
+    take: 50, // Limit to 50 messages per request
+    include: {
+      sender: { select: { supabaseId: true } }, // Include sender’s Supabase UUID
+      receiver: { select: { supabaseId: true } }, // Include receiver’s Supabase UUID
+    },
+  });
+
+  // Step 4: Reverse the order to display messages from oldest to newest
+  const sortedMessages = messages.reverse();
+
+  // Step 5: Translate messages if necessary
+  const translatedMessages = await Promise.all(
+    sortedMessages.map(async (msg) => {
+      // Only translate if the sender isn't the current user
+      if (msg.senderId !== senderId) {
+        const [translation] = await this.translationClient.translateText({
+          contents: [msg.content],
+          targetLanguageCode: user.preferredLang,
+          parent: `projects/${process.env.GOOGLE_CLOUD_PROJECT}/locations/global`, // Google Cloud project ID
+        });
+
+        return { ...msg, translatedContent: translation.translations[0].translatedText };
+      }
+      return msg;
+    })
+  );
+
+  return translatedMessages;
+}
+
+
 
   // Create a relationship between users
   async createContact(userId: number, receiverId: number) {

@@ -1,4 +1,4 @@
-import { Controller, Post,Get, Query,Param, Body, UnauthorizedException } from '@nestjs/common';
+import { Controller, Post,Get, Query,Param, Body, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -12,17 +12,26 @@ export class ChatController {
   }
 
   @Get('messages/:contactId')
-  async getMessages(
-    @Query('userId') userId: string, // Supabase UUID
-    @Param('contactId') contactId: number, // Integer contact ID
-  ) {
-    if (!userId || !contactId) {
-      throw new Error('Invalid user or contact ID');
-    }
-  
-    return this.chatService.getMessages(userId, contactId);
+async getMessages(
+  @Query('userId') userId: string, // Supabase UUID
+  @Param('contactId') contactId: number, // Integer contact ID
+  @Query('offset') offset: string = '0', // Optional offset for pagination (default to '0')
+) {
+  // Validate query parameters
+  if (!userId || !contactId) {
+    throw new BadRequestException('Invalid user or contact ID');
   }
-    
+
+  // Convert offset to a number and ensure it's valid
+  const parsedOffset = parseInt(offset, 10);
+  if (isNaN(parsedOffset) || parsedOffset < 0) {
+    throw new BadRequestException('Invalid offset value');
+  }
+
+  // Call the chat service to fetch messages
+  return this.chatService.getMessages(userId, contactId, parsedOffset);
+}
+
 
   @Post('start')
   async startNewChat(@Body() body: { userId: string, contactId: string }) {
