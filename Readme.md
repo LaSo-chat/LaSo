@@ -13,6 +13,8 @@ Ensure you have the necessary tools installed:
 
 1. **Environment Variables**
    - Copy the `.env` files into both the `frontend` and `backend` directories.
+   - Access Request for this Folder
+   https://drive.google.com/drive/folders/1BV09aOENtK2SJR6MnvX9rhmb6eUxFCl0?usp=sharing
 
 2. **Frontend Setup**
    ```bash
