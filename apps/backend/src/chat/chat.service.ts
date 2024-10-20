@@ -9,7 +9,9 @@ export class ChatService {
 
   constructor(private prisma: PrismaService) {
     // Initialize the translation client
-    this.translationClient = new TranslationServiceClient();
+    this.translationClient = new TranslationServiceClient({
+      projectId: process.env.GOOGLE_CLOUD_PROJECT,
+    });
   }
 
   // Create a message between two users with translation support
