@@ -11,6 +11,7 @@ export class ChatService {
     // Initialize the translation client
     this.translationClient = new TranslationServiceClient({
       projectId: process.env.GOOGLE_CLOUD_PROJECT,
+      keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS,
     });
   }
 
