@@ -21,11 +21,32 @@ Ensure you have the necessary tools installed:
    cd apps/frontend
    npm install
 
+In main.ts, Comment 
+<!-- <StrictMode> -->
+.....
+...
+<!-- </StrictMode> -->
+
 3. **Backend Setup**
     ```bash
     cd app/backend
     npm install
     npx prisma generate
+
+In the above drive link, there would be "semiotic-quasar-439415-p9-80a5a47062e7.json", download and store that file in /backend folder
+
+and set GOOGLE_APPLICATION_CREDENTIALS to the file path 
+
+right click on the file and copy path 
+and run
+      ```cmd
+      set GOOGLE_APPLICATION_CREDENTIALS=\path\to\sile.json
+
+      ```bash
+      export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/service-account-file.json"
+
+repeat this in root folder also
+
 
 4. **Run the Application**
     In the root folder
