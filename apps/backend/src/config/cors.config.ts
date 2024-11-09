@@ -6,6 +6,7 @@ export const corsConfig: CorsOptions = {
   origin: (origin, callback) => {
     const allowedOrigins = [
       'https://laso-frontend.vercel.app',
+      'https://laso-app.vercel.app',
       'http://localhost:5173',
       'http://localhost:57424'
     ];
