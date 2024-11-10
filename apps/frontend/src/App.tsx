@@ -12,6 +12,8 @@ import AccountPage from './pages/AccountPage';
 import { useSelector } from 'react-redux';
 import { RootState } from './app/store';
 import { useAuth } from './hooks/useAuth';
+import GroupsPage from './pages/GroupsPage';
+import DirectsPage from './pages/DirectsPage';
 
 const App: React.FC = () => {
     useAuth(); // Check session and restore authentication state
@@ -28,6 +30,8 @@ const App: React.FC = () => {
             <Route path="/profile-step-2" element={<ProfileStep2 />} />
             <Route path="/chat/:id" element={<ChatPage />} />
             <Route path="/account" element={<AccountPage />} />
+            <Route path="/groups" element={<GroupsPage />} />
+            <Route path="/directs" element={<DirectsPage />} />
             <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/home" />}  />
             <Route path="/signup" element={<SignUp />} />
         </Routes>

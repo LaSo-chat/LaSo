@@ -35,7 +35,7 @@ interface Chat {
   };
 }
 
-const Home: React.FC = () => {
+const DirectsPage: React.FC = () => {
   const location = useLocation();
   const [isNewChatDrawerOpen, setIsNewChatDrawerOpen] = useState(false);
   const [isControlledDrawerOpen, setIsControlledDrawerOpen] = useState(false);
@@ -225,13 +225,15 @@ const Home: React.FC = () => {
       <div className="fixed bottom-0 w-full bg-white shadow-lg z-10">
         <div className="relative p-4 flex justify-around items-center">
           {/* Home */}
-          <IoHomeOutline size={24} className="text-sky-700 cursor-pointer" />
+          <IoHomeOutline size={24} 
+          className="text-sky-700 cursor-pointer" 
+          onClick={() => navigate("/home")}
+          />
 
           {/* Direct Messages with extra margin-right */}
           <IoChatboxEllipsesOutline
             size={24}
             className="text-sky-700 cursor-pointer mr-6" // Add right margin
-            onClick={() => navigate("/directs")}
           />
 
           {/* New Chat - Centered and positioned 50% outside the container */}
@@ -305,4 +307,4 @@ const Home: React.FC = () => {
   );
 };
 
-export default Home;
+export default DirectsPage;
