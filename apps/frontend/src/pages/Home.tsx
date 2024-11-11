@@ -1,24 +1,13 @@
 // src/pages/Home.tsx
 import React, { useState, useEffect } from "react";
-import {
-  IoSearch,
-  IoHomeOutline,
-  IoClose,
-  IoEllipse,
-  IoChatboxEllipsesOutline,
-  IoPeopleOutline,
-  IoEllipsisHorizontalOutline,
-} from "react-icons/io5";
-import { RiChatNewFill } from "react-icons/ri";
+import { IoSearch, IoEllipse } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
-import { Drawer, DrawerContent } from "@/components/ui/drawer";
-import SettingsDrawer from "../components/right-drawer";
-import { startNewChat, getContactsForUser } from "../services/chatService";
+import { getContactsForUser } from "../services/chatService";
 import { getUserProfile } from "../services/userService";
 import Avatar from "boring-avatars";
 import moment from "moment";
 import Loader from "@/components/Loader";
-import { useLocation } from "react-router-dom";
+import NavBar from "@/components/ui/NavBar";
 
 interface Chat {
   id: string;
@@ -36,10 +25,6 @@ interface Chat {
 }
 
 const Home: React.FC = () => {
-  const location = useLocation();
-  const [isNewChatDrawerOpen, setIsNewChatDrawerOpen] = useState(false);
-  const [isControlledDrawerOpen, setIsControlledDrawerOpen] = useState(false);
-  const [newChatId, setNewChatId] = useState("");
   const [chats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);
   // const [userFullName, setUserFullName] = useState('');
@@ -75,44 +60,6 @@ const Home: React.FC = () => {
     }
     fetchContacts();
   }, []);
-
-  useEffect(() => {
-    if (location.state && location.state.openDrawer) {
-      setIsNewChatDrawerOpen(true); // Open the drawer when state is passed
-      window.history.replaceState({}, document.title);
-    }
-  }, [location]);
-
-  const handleNewChatClick = () => {
-    setIsNewChatDrawerOpen(true);
-  };
-
-  const closeNewChatDrawer = () => {
-    setIsNewChatDrawerOpen(false);
-  };
-
-  const openControlledDrawer = () => setIsControlledDrawerOpen(true);
-
-  const closeControlledDrawer = () => setIsControlledDrawerOpen(false);
-
-  const handleCreateChat = async () => {
-    if (newChatId.toLowerCase().trim()) {
-      let chatid = newChatId.toLowerCase().trim();
-      console.log(chatid, "----------------------------chatid");
-      try {
-        const newChat = await startNewChat(chatid);
-        if (newChat) {
-          // setChats((prevChats) => [...prevChats, newChat]);
-          alert("Successfully Connected");
-          closeNewChatDrawer();
-          window.location.reload();
-        }
-      } catch (error) {
-        console.error("Failed to start new chat:", error);
-        alert(error);
-      }
-    }
-  };
 
   const formatDate = (dateString?: string): string => {
     if (!dateString) return "";
@@ -222,85 +169,8 @@ const Home: React.FC = () => {
         )}
       </div>
       {/* Bottom Navigation Bar */}
-      <div className="fixed bottom-0 w-full bg-white shadow-lg z-10">
-        <div className="relative p-4 flex justify-around items-center">
-          {/* Home */}
-          <IoHomeOutline size={24} className="text-sky-700 cursor-pointer" />
 
-          {/* Direct Messages with extra margin-right */}
-          <IoChatboxEllipsesOutline
-            size={24}
-            className="text-sky-700 cursor-pointer mr-6" // Add right margin
-            onClick={() => navigate("/directs")}
-          />
-
-          {/* New Chat - Centered and positioned 50% outside the container */}
-          <button
-            className="absolute bottom-1/2 transform translate-y-1/2 flex items-center justify-center bg-sky-950 text-white p-3 rounded-full border-8"
-            onClick={handleNewChatClick}
-            style={{
-              left: "50%",
-              transform: "translate(-50%, 10%)",
-              borderColor: "#f3f4f6",
-            }}
-          >
-            <RiChatNewFill size={30} />
-          </button>
-
-          {/* Group Messages with extra margin-left */}
-          <IoPeopleOutline
-            size={24}
-            className="text-sky-700 cursor-pointer ml-6" // Add left margin
-            onClick={() => navigate("/groups")}
-          />
-
-          {/* More Options (dots) */}
-          <IoEllipsisHorizontalOutline
-            size={24}
-            className="text-sky-700 cursor-pointer"
-            onClick={openControlledDrawer}
-          />
-        </div>
-      </div>
-
-      {/* Drawer for New Chat */}
-      <Drawer open={isNewChatDrawerOpen} onClose={closeNewChatDrawer}>
-        <DrawerContent>
-          <div className="flex justify-between items-center p-4">
-            <h2 className="text-lg font-semibold">New Chat</h2>
-            <IoClose
-              size={24}
-              className="cursor-pointer"
-              onClick={closeNewChatDrawer}
-            />
-          </div>
-          <div className="p-6 space-y-4">
-            <p className="text-gray-600">
-              Add new friends to chat! Enter their email address to start a
-              conversation.
-            </p>
-            <input
-              type="email"
-              required
-              value={newChatId}
-              onChange={(e) => setNewChatId(e.target.value)}
-              placeholder="Enter User Email"
-              className="w-full p-3 border rounded-full"
-            />
-            <button
-              onClick={handleCreateChat}
-              className="bg-sky-500 text-white p-3 rounded-full w-full"
-            >
-              Create Chat
-            </button>
-          </div>
-        </DrawerContent>
-      </Drawer>
-
-      <SettingsDrawer
-        isOpen={isControlledDrawerOpen}
-        onClose={closeControlledDrawer}
-      />
+      <NavBar />
     </div>
   );
 };

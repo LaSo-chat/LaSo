@@ -1,22 +1,27 @@
-// src/components/NavBar.tsx
 import React, { useState } from "react";
 import {
-  IoChatbubbleEllipsesOutline,
   IoHomeOutline,
   IoChatboxEllipsesOutline,
   IoPeopleOutline,
   IoEllipsisHorizontalOutline,
   IoClose,
 } from "react-icons/io5";
-import { useNavigate } from "react-router-dom";
+import { RiChatNewFill } from "react-icons/ri";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
-import ControlledRightDrawer from "@/components/right-drawer";
+import SettingsDrawer from "@/components/right-drawer";
+import { useNavigate } from "react-router-dom";
+import { startNewChat } from "@/services/chatService";
+import { IconType } from "react-icons";
 
-interface NavBarProps {
-  onNewChat: (email: string) => Promise<void>;
+interface NavItemProps {
+  path: string;
+  icon: IconType;
+  label: string;
 }
 
-const NavBar: React.FC<NavBarProps> = ({ onNewChat }) => {
+interface NavBarProps {}
+
+const NavBar: React.FC<NavBarProps> = () => {
   const [isNewChatDrawerOpen, setIsNewChatDrawerOpen] = useState(false);
   const [isControlledDrawerOpen, setIsControlledDrawerOpen] = useState(false);
   const [newChatId, setNewChatId] = useState("");
@@ -29,54 +34,96 @@ const NavBar: React.FC<NavBarProps> = ({ onNewChat }) => {
 
   const handleCreateChat = async () => {
     if (newChatId.toLowerCase().trim()) {
-      await onNewChat(newChatId.toLowerCase().trim());
-      closeNewChatDrawer();
-      setNewChatId("");
+      let chatid = newChatId.toLowerCase().trim();
+      try {
+        const newChat = await startNewChat(chatid);
+        if (newChat) {
+          alert("Successfully Connected");
+          closeNewChatDrawer();
+          if (location.pathname === "/home") {
+            window.location.reload();
+          } else {
+            navigate("/home");
+          }
+        }
+      } catch (error) {
+        console.error("Failed to start new chat:", error);
+        alert(error);
+      }
     }
+  };
+
+  const NavItem: React.FC<NavItemProps> = ({ path, icon: Icon }) => {
+    const isActive = location.pathname === path;
+
+    return (
+      <div
+        className="relative flex items-center justify-center"
+        onClick={() => navigate(path)}
+      >
+        <div
+          className={`
+            w-12 h-12 flex items-center justify-center rounded-full cursor-pointer
+            transition-all duration-300 ease-in-out
+            ${isActive ? "bg-sky-100" : "hover:bg-sky-50"}
+          `}
+        >
+          <Icon
+            size={24}
+            className={`
+              text-sky-700 transition-all duration-300 ease-in-out
+              scale-100
+            `}
+          />
+        </div>
+      </div>
+    );
   };
 
   return (
     <>
-      {/* Bottom Navigation Bar */}
       <div className="fixed bottom-0 w-full bg-white shadow-lg z-10">
-        <div className="p-4 flex justify-around items-center">
-          <IoHomeOutline
-            size={24}
-            className="text-sky-700 cursor-pointer"
-            onClick={() => navigate("/")}
+        <div className="relative p-2 flex justify-around items-center">
+          <NavItem path="/home" icon={IoHomeOutline} label="Home" />
+          <NavItem
+            path="/directs"
+            icon={IoChatboxEllipsesOutline}
+            label="Messages"
           />
-          <IoChatboxEllipsesOutline
-            size={24}
-            className="text-sky-700 cursor-pointer"
-            onClick={() => navigate("/direct-messages")}
-          />
-          <button
-            className="flex items-center justify-center bg-sky-950 text-white p-3 rounded-full"
-            onClick={handleNewChatClick}
-          >
-            <IoChatbubbleEllipsesOutline size={20} />
-          </button>
-          <IoPeopleOutline
-            size={24}
-            className="text-sky-700 cursor-pointer"
-            onClick={() => navigate("/group-messages")}
-          />
-          <IoEllipsisHorizontalOutline
-            size={24}
-            className="text-sky-700 cursor-pointer"
-            onClick={openControlledDrawer}
-          />
+
+          <div className="relative w-16">
+            <button
+              className="absolute left-1/2 bottom-1/2 transform -translate-x-1/2 translate-y-1/4
+                         flex items-center justify-center bg-sky-950 text-white p-3 
+                         rounded-full border-8 border-gray-50 hover:bg-sky-900
+                         transition-all duration-300 ease-in-out"
+              onClick={handleNewChatClick}
+            >
+              <RiChatNewFill size={30} />
+            </button>
+          </div>
+
+          <NavItem path="/groups" icon={IoPeopleOutline} label="Groups" />
+
+          <div className="relative flex items-center justify-center">
+            <div
+              className="w-12 h-12 flex items-center justify-center rounded-full cursor-pointer
+                         hover:bg-sky-50 transition-all duration-300 ease-in-out"
+              onClick={openControlledDrawer}
+            >
+              <IoEllipsisHorizontalOutline size={24} className="text-sky-700" />
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Drawer for New Chat */}
       <Drawer open={isNewChatDrawerOpen} onClose={closeNewChatDrawer}>
         <DrawerContent>
           <div className="flex justify-between items-center p-4">
             <h2 className="text-lg font-semibold">New Chat</h2>
             <IoClose
               size={24}
-              className="cursor-pointer"
+              className="cursor-pointer hover:text-sky-700 transition-colors duration-300"
               onClick={closeNewChatDrawer}
             />
           </div>
@@ -91,11 +138,13 @@ const NavBar: React.FC<NavBarProps> = ({ onNewChat }) => {
               value={newChatId}
               onChange={(e) => setNewChatId(e.target.value)}
               placeholder="Enter User Email"
-              className="w-full p-3 border rounded-full"
+              className="w-full p-3 border rounded-full focus:ring-2 focus:ring-sky-500 
+                       focus:border-transparent transition-all duration-300"
             />
             <button
               onClick={handleCreateChat}
-              className="bg-sky-500 text-white p-3 rounded-full w-full"
+              className="bg-sky-500 text-white p-3 rounded-full w-full
+                       hover:bg-sky-600 transition-colors duration-300"
             >
               Create Chat
             </button>
@@ -103,7 +152,7 @@ const NavBar: React.FC<NavBarProps> = ({ onNewChat }) => {
         </DrawerContent>
       </Drawer>
 
-      <ControlledRightDrawer
+      <SettingsDrawer
         isOpen={isControlledDrawerOpen}
         onClose={closeControlledDrawer}
       />
