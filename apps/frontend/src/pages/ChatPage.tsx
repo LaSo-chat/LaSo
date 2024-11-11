@@ -76,7 +76,8 @@ const ChatPage: React.FC = () => {
         }
 
         const data: Message[] = await response.json();
-        if (data.length === 0 && data.length > 50) {
+
+        if (data.length === 0 || data.length < 50) {
           setHasMoreMessages(false); // No more messages to load
         } else {
           setMessages((prevMessages) => [...data, ...prevMessages]); // Prepend new messages
