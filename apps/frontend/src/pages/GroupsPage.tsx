@@ -16,6 +16,8 @@ import SettingsDrawer from "../components/right-drawer";
 import Avatar from "boring-avatars";
 import moment from "moment";
 import Loader from "@/components/Loader";
+import { getUserFromSession } from '../services/authService';
+
 
 interface GroupMember {
   id: number;
@@ -34,8 +36,13 @@ interface Group {
     content?: string;
     createdAt?: string;
     isRead?: boolean;
-    senderId?: number;
-    senderName?: string;
+    sender: {
+      email?: string;
+      fullName?: string;
+      id?: number;
+      preferredLang?: string;
+      country?: string;
+    }
   };
 }
 
@@ -44,6 +51,7 @@ const GroupsPage: React.FC = () => {
   const [isControlledDrawerOpen, setIsControlledDrawerOpen] = useState(false);
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [newGroupName, setNewGroupName] = useState("");
   const [newGroupDescription, setNewGroupDescription] = useState("");
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
@@ -51,59 +59,64 @@ const GroupsPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
 
-  // Mock data for demonstration
+
+  // Fetch groups
   useEffect(() => {
-    const mockGroups: Group[] = [
-      {
-        id: "1",
-        name: "Project Team Alpha",
-        description: "Main project discussion group",
-        memberCount: 8,
-        members: [
-          { id: 1, fullName: "John Doe", email: "john@example.com" },
-          { id: 2, fullName: "Jane Smith", email: "jane@example.com" },
-        ],
-        lastMessage: {
-          content: "Let's meet tomorrow at 10 AM",
-          createdAt: new Date().toISOString(),
-          isRead: false,
-          senderId: 1,
-          senderName: "John Doe"
+    const fetchGroups = async () => {
+      try {
+        setLoading(true);
+        const userId = await getUserFromSession();
+        const backendUrl = import.meta.env.VITE_API_URL || 'https://laso.onrender.com';
+        const response = await fetch(`${backendUrl}/api/groups/getGroups?userId=${userId}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch groups');
         }
-      },
-      {
-        id: "2",
-        name: "Design Team",
-        description: "UI/UX discussions",
-        memberCount: 5,
-        members: [
-          { id: 3, fullName: "Alice Johnson", email: "alice@example.com" },
-          { id: 4, fullName: "Bob Wilson", email: "bob@example.com" },
-        ],
-        lastMessage: {
-          content: "New design mockups are ready",
-          createdAt: new Date(Date.now() - 86400000).toISOString(),
-          isRead: true,
-          senderId: 3,
-          senderName: "Alice Johnson"
-        }
+
+        const data = await response.json();
+        setGroups(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch groups');
+        console.error('Error fetching groups:', err);
+      } finally {
+        setLoading(false);
       }
-    ];
-    
-    // Mock available members
-    const mockMembers: GroupMember[] = [
-      { id: 1, fullName: "John Doe", email: "john@example.com" },
-      { id: 2, fullName: "Jane Smith", email: "jane@example.com" },
-      { id: 3, fullName: "Alice Johnson", email: "alice@example.com" },
-      { id: 4, fullName: "Bob Wilson", email: "bob@example.com" },
-      { id: 5, fullName: "Emma Davis", email: "emma@example.com" },
-      { id: 6, fullName: "Michael Brown", email: "michael@example.com" },
-    ];
-    
-    setGroups(mockGroups);
-    setAvailableMembers(mockMembers);
-    setLoading(false);
+    };
+
+    fetchGroups();
   }, []);
+
+  // Fetch available members
+  useEffect(() => {
+    const fetchMembers = async () => {
+      try {
+        const userId = await getUserFromSession();
+        const backendUrl = import.meta.env.VITE_API_URL || 'https://laso.onrender.com';
+        const response = await fetch(`${backendUrl}/api/user/contacts?userId=${userId}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch members');
+        }
+
+        const data = await response.json();
+        setAvailableMembers(data);
+      } catch (err) {
+        console.error('Error fetching members:', err);
+      }
+    };
+
+    if (isNewGroupDrawerOpen) {
+      fetchMembers();
+    }
+  }, [isNewGroupDrawerOpen]);
 
   const handleNewGroupClick = () => {
     setIsNewGroupDrawerOpen(true);
@@ -137,21 +150,64 @@ const GroupsPage: React.FC = () => {
   const handleCreateGroup = async () => {
     if (newGroupName.trim() && selectedMembers.length > 0) {
       try {
-        // Here you would typically make an API call to create the group
-        const newGroup = {
-          name: newGroupName,
-          description: newGroupDescription,
-          members: selectedMembers
-        };
-        console.log("Creating group:", newGroup);
-        alert("Group created successfully!");
+        const userId = await getUserFromSession();
+        const backendUrl = import.meta.env.VITE_API_URL || 'https://laso.onrender.com';
+        const response = await fetch(`${backendUrl}/api/groups/create`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
+          body: JSON.stringify({
+            userId: userId,
+            name: newGroupName,
+            description: newGroupDescription,
+            members: selectedMembers
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to create group');
+        }
+
+        const newGroup = await response.json();
+        setGroups(prevGroups => [...prevGroups, newGroup]);
         closeNewGroupDrawer();
       } catch (error) {
         console.error("Failed to create group:", error);
-        alert(error);
+        alert(error instanceof Error ? error.message : 'Failed to create group');
       }
     } else {
       alert("Please enter a group name and select at least one member");
+    }
+  };
+
+  const handleGroupClick = async (group: any) => {
+    try {
+      // Mark messages as read when entering the group
+      const userId = await getUserFromSession();
+      console.log(group,'-----------group');
+      
+      const backendUrl = import.meta.env.VITE_API_URL || 'https://laso.onrender.com';
+      await fetch(`${backendUrl}/api/groups/${group.id}/messages/read?userId=${userId}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({
+          userId: userId,
+        })
+      });
+
+      navigate(`/group/${group.id}`, {
+        state: {
+          group: group,
+        },
+      });
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+      // Still navigate even if marking as read fails
+      navigate(`/group/${group.id}`);
     }
   };
 
@@ -163,6 +219,20 @@ const GroupsPage: React.FC = () => {
     }
     return date.format("MM/DD/YYYY");
   };
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        <p className="text-red-500 mb-4">{error}</p>
+        <button 
+          onClick={() => window.location.reload()} 
+          className="bg-sky-500 text-white px-4 py-2 rounded-full"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
@@ -188,7 +258,7 @@ const GroupsPage: React.FC = () => {
             <div
               key={group.id}
               className="flex justify-between items-center mb-4 relative cursor-pointer"
-              onClick={() => navigate(`/group/${group.id}`)}
+              onClick={() => handleGroupClick(group)}
             >
               {!group.lastMessage?.isRead && (
                 <IoEllipse
@@ -208,7 +278,7 @@ const GroupsPage: React.FC = () => {
                   <p className="text-xs text-gray-500">{group.memberCount} members</p>
                   <p className="text-sm text-gray-500 truncate w-48">
                     {group.lastMessage ? 
-                      `${group.lastMessage.senderName}: ${group.lastMessage.content}` :
+                      `${group.lastMessage.sender.fullName}: ${group.lastMessage.content}` :
                       "No messages yet"}
                   </p>
                 </div>
@@ -336,6 +406,7 @@ const GroupsPage: React.FC = () => {
         </DrawerContent>
       </Drawer>
 
+      {/* Settings Drawer */}
       <SettingsDrawer
         isOpen={isControlledDrawerOpen}
         onClose={closeControlledDrawer}

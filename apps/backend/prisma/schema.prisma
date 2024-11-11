@@ -5,6 +5,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl         = env("DIRECT_URL")
 }
 
 // User model to store user information and profile details
@@ -24,6 +25,9 @@ model User {
   messagesReceived Message[] @relation("ReceivedMessages")
   contacts         Contact[] @relation("UserContacts")
   contactOf        Contact[] @relation("ContactUsers")
+  createdGroups    Group[]        @relation("CreatedGroups")
+  groupMemberships GroupMember[]
+  groupMessages    GroupMessage[]
   auth             Auth?     @relation("UserAuth")
 }
 
@@ -51,6 +55,45 @@ model Contact {
   @@unique([userId, receiverId]) // Ensure uniqueness, no duplicate connections
 }
 
+
+// Group model to store group information
+model Group {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  creatorId   Int       // ID of the user who created the group
+  creator     User      @relation("CreatedGroups", fields: [creatorId], references: [id])
+  members     GroupMember[]
+  messages    GroupMessage[]
+}
+
+// GroupMember model to store group memberships
+model GroupMember {
+  id        Int      @id @default(autoincrement())
+  groupId   Int
+  userId    Int
+  role      String   @default("MEMBER") // Possible values: ADMIN, MEMBER
+  joinedAt  DateTime @default(now())
+  group     Group    @relation(fields: [groupId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([groupId, userId])
+}
+
+// GroupMessage model to store messages in groups
+model GroupMessage {
+  id        Int      @id @default(autoincrement())
+  content   String
+  groupId   Int
+  senderId  Int
+  createdAt DateTime @default(now())
+  isRead    Boolean  @default(false)
+  group     Group    @relation(fields: [groupId], references: [id])
+  sender    User     @relation(fields: [senderId], references: [id])
+}
+
 // Auth model for handling authentication providers (via Supabase)
 model Auth {
   id       Int    @id @default(autoincrement())
@@ -58,3 +101,6 @@ model Auth {
   provider String // e.g., 'email', 'google', etc.
   user     User   @relation("UserAuth", fields: [userId], references: [id])
 }
+
+
+

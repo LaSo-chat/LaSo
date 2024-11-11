@@ -12,6 +12,7 @@ import { socketService } from "../services/socketService";
 import Loader from "@/components/Loader";
 import { markMessagesAsRead } from "@/services/chatService";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
+import { useSocket } from '../contexts/SocketContext';
 
 interface Message {
   id: number;
@@ -28,6 +29,7 @@ interface LocationState {
 }
 
 const ChatPage: React.FC = () => {
+  const { isConnected } = useSocket(); // Get the socket connection status from the SocketContext
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { id } = useParams<{ id: string }>();
   const [message, setMessage] = useState("");
@@ -40,6 +42,7 @@ const ChatPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { receiver } = location.state as LocationState;
+  // const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
@@ -56,7 +59,7 @@ const ChatPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    async function setupChatAndSocket() {
+    async function fetchMessages() {
       try {
         setIsLoading(true);
         const userId = await getUserFromSession();
@@ -73,31 +76,32 @@ const ChatPage: React.FC = () => {
         }
 
         const data: Message[] = await response.json();
-        if (data.length === 0) {
+        if (data.length === 0 && data.length > 50) {
           setHasMoreMessages(false); // No more messages to load
         } else {
           setMessages((prevMessages) => [...data, ...prevMessages]); // Prepend new messages
         }
 
-        await socketService.connect();
-        socketService.onMessage(handleNewMessage);
-
         await updateMessagesAsRead(); // Mark messages as read
       } catch (error) {
-        console.error("Error setting up chat:", error);
+        console.error("Error fetching messages:", error);
         setError("Failed to load chat. Please try again.");
       } finally {
         setIsLoading(false);
       }
     }
 
-    setupChatAndSocket();
+    fetchMessages();
+
+    // Subscribe to new messages only if the socket is connected
+    if (isConnected) {
+      socketService.onMessage(handleNewMessage);
+    }
 
     return () => {
       socketService.offMessage(handleNewMessage);
-      socketService.disconnect();
     };
-  }, [id, offset, handleNewMessage]);
+  }, [id, offset, handleNewMessage, isConnected]);
 
   const handleSendMessage = () => {
     if (message.trim() && senderId && id) {
@@ -147,10 +151,6 @@ const ChatPage: React.FC = () => {
     setOffset((prevOffset) => prevOffset + 50); // Load next messages
   };
 
-  const handleDeleteChat = () => {
-    console.log("Delete chat clicked");
-  };
-
   if (error) return <div>{error}</div>;
 
   return (
@@ -183,7 +183,7 @@ const ChatPage: React.FC = () => {
                 <p className="text-gray-600">{receiver.fullName}</p>
               </div>
               <button
-                onClick={handleDeleteChat}
+                // onClick={() => setShowDeleteConfirmation(true)}
                 className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"
               >
                 <IoTrashOutline size={24} />

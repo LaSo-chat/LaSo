@@ -6,6 +6,7 @@ import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { ChatModule } from './chat/chat.module';
 import { ConfigModule } from '@nestjs/config';
+import { GroupChatModule } from './group-chat/group-chat.module';
 
 @Module({
   imports: [PrismaModule,
@@ -13,7 +14,7 @@ import { ConfigModule } from '@nestjs/config';
       isGlobal: true,
       envFilePath: '.env',
     }),
-    UserModule, AuthModule, ChatModule],
+    UserModule, AuthModule, ChatModule, GroupChatModule],
   controllers: [AppController],
   providers: [AppService],
 })
