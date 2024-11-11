@@ -189,7 +189,7 @@ const GroupsPage: React.FC = () => {
       console.log(group,'-----------group');
       
       const backendUrl = import.meta.env.VITE_API_URL || 'https://laso.onrender.com';
-      await fetch(`${backendUrl}/api/groups/${group.id}/messages/read?userId=${userId}`, {
+      fetch(`${backendUrl}/api/groups/${group.id}/messages/read?userId=${userId}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
