@@ -77,6 +77,7 @@ const ChatPage: React.FC = () => {
 
         const data: Message[] = await response.json();
 
+        
         if (data.length === 0) {
           setHasMoreMessages(false); // No more messages to load
         } else {
