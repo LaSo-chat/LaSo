@@ -89,3 +89,54 @@ export async function markMessagesAsRead(chatId: number) {
 
     return result;
 }
+
+
+
+
+
+
+
+// This function fetches unread contacts and groups for the logged-in user with a maximum of 4 items for each
+export async function getUnreadContactsAndGroupsForUser() {
+    // Get the logged-in user's session
+    const { data: sessionData, error } = await supabase.auth.getSession();
+
+    if (error || !sessionData.session) {
+        throw new Error('Failed to retrieve session');
+    }
+
+    // Retrieve the userId (UUID) from Supabase Auth
+    const supabaseUserId = sessionData.session.user.id; // UUID from Supabase Auth
+    const backendUrl = import.meta.env.VITE_API_URL || 'https://laso.onrender.com';
+
+    // Fetch unread contacts (limiting to a max of 4, filtered by isRead: false)
+    const contactsResponse = await fetch(`${backendUrl}/api/chat/contacts?userId=${supabaseUserId}&limit=4&isRead=false`);
+    if (!contactsResponse.ok) {
+        throw new Error('Failed to fetch unread contacts');
+    }
+    const contacts = await contactsResponse.json();
+
+    // Fetch unread groups (limiting to a max of 4, filtered by isRead: false)
+    const groupsResponse = await fetch(`${backendUrl}/api/groups/getGroups?userId=${supabaseUserId}&limit=4&isRead=false`, {
+        headers: {
+            'Authorization': `Bearer ${sessionData.session.access_token}`,
+        },
+    });
+
+    if (!groupsResponse.ok) {
+        throw new Error('Failed to fetch unread groups');
+    }
+    
+    const groups = await groupsResponse.json();
+    // console.log(groups,'+++++++++++++++++groups');
+
+    // Filter unread contacts and groups (if the backend doesn't filter by isRead)
+    const unreadContacts = contacts.filter((contact: any) => contact.lastMessage?.isRead === false);
+    const unreadGroups = groups.filter((group: any) => group.lastMessage?.isRead === false);
+
+    // Return both unread contacts and groups
+    return {
+        contacts: unreadContacts,
+        groups: unreadGroups
+    };
+}

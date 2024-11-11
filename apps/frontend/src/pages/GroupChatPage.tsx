@@ -102,7 +102,7 @@ const GroupChatPage: React.FC = () => {
         }
 
         const data: GroupMessage[] = await response.json();
-        if (data.length === 0) {
+        if (data.length === 0 ) {
           setHasMoreMessages(false);
         } else {
           setMessages(prevMessages => [...data, ...prevMessages]);
@@ -264,7 +264,6 @@ const GroupChatPage: React.FC = () => {
           placeholder="Type a message"
           className="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:outline-none"
           onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-          autoFocus
         />
         <button
           onClick={handleSendMessage}
