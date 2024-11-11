@@ -5,7 +5,6 @@ import { BsInstagram, BsTelegram, BsWhatsapp } from "react-icons/bs";
 import { FaFacebookF } from "react-icons/fa";
 import { BiPhone } from "react-icons/bi";
 import { HiOutlineMail } from "react-icons/hi";
-import { IoIosArrowBack } from "react-icons/io";
 
 const ContactUsPage: React.FC = () => {
   const contactMethods = [

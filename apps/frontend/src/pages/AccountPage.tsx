@@ -1,10 +1,6 @@
 // src/pages/AccountPage.tsx
 import React, { useState, useEffect } from "react";
-import {
-  IoChatbubbleEllipsesOutline,
-  IoPersonOutline,
-  IoLogOutOutline,
-} from "react-icons/io5"; // Icons
+import { IoLogOutOutline } from "react-icons/io5"; // Icons
 import NavBar from "@/components/ui/NavBar";
 import { useNavigate } from "react-router-dom";
 import { signOut } from "../services/authService";
@@ -14,14 +10,9 @@ import Loader from "@/components/Loader";
 import Avatar from "boring-avatars";
 
 const AccountPage: React.FC = () => {
-  const [showModal, setShowModal] = useState(false); // State to control modal visibility
   const [isLoading, setIsLoading] = useState(true);
   const dispatch = useDispatch();
   const navigate = useNavigate();
-
-  const closeModal = () => {
-    setShowModal(false); // Hide the modal when clicking outside or on cancel
-  };
 
   useEffect(() => {
     const fetchUserData = async () => {
