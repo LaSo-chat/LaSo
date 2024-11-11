@@ -1,5 +1,5 @@
 // src/user/user.controller.ts
-import { Controller,Get, Put, Body, Req, UnauthorizedException } from '@nestjs/common';
+import { Controller,Get, Put, Body, Req, UnauthorizedException, Query } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Request } from 'express';
 import { supabase } from '../auth/supabaseClient';
@@ -81,4 +81,42 @@ export class UserController {
 
         return userProfile;
     }
+
+
+    // Fetch user's contacts based on the supabaseId query parameter
+  @Get('contacts')
+  async getContacts(@Query('userId') userId: string) {
+    // Ensure supabaseId is provided as a query parameter
+    if (!userId) {
+      throw new UnauthorizedException('supabaseId is required');
+    }
+
+    // Fetch the user from the database using the provided supabaseId
+    const dbUser = await this.prisma.user.findUnique({
+      where: { supabaseId: userId },
+    });
+
+    if (!dbUser) {
+      throw new UnauthorizedException('User profile not found');
+    }
+
+    // Fetch the user's contacts from the Contact table using Prisma
+    const contacts = await this.prisma.contact.findMany({
+      where: { userId: dbUser.id }, // Get contacts where the user is the owner
+      include: {
+        receiver: true, // Include receiver details (the contact's user data)
+      },
+    });
+
+    // Return the contacts
+    return contacts.map(contact => ({
+      id: contact.receiver.id,
+      fullName: contact.receiver.fullName,
+      email: contact.receiver.email,
+      phone: contact.receiver.phone,
+      country: contact.receiver.country,
+      preferredLang: contact.receiver.preferredLang,
+    }));
+  }
+
 }
