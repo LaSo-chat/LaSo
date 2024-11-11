@@ -1,10 +1,17 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { IoArrowBackOutline, IoSendOutline, IoArrowForward } from 'react-icons/io5';
-import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { getUserFromSession } from '../services/authService';
-import { socketService } from '../services/socketService';
-import Loader from '@/components/Loader';
-import { markMessagesAsRead } from '@/services/chatService';
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import {
+  IoArrowBackOutline,
+  IoSendOutline,
+  IoArrowForward,
+  IoPersonOutline,
+  IoTrashOutline,
+} from "react-icons/io5";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { getUserFromSession } from "../services/authService";
+import { socketService } from "../services/socketService";
+import Loader from "@/components/Loader";
+import { markMessagesAsRead } from "@/services/chatService";
+import { Drawer, DrawerContent } from "@/components/ui/drawer";
 
 interface Message {
   id: number;
@@ -21,8 +28,9 @@ interface LocationState {
 }
 
 const ChatPage: React.FC = () => {
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const { id } = useParams<{ id: string }>();
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [senderId, setSenderId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -38,13 +46,13 @@ const ChatPage: React.FC = () => {
 
   const scrollToBottom = useCallback(() => {
     if (lastMessageRef.current) {
-      lastMessageRef.current.scrollIntoView({ behavior: 'smooth' });
+      lastMessageRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, []);
 
   const handleNewMessage = useCallback((newMessage: Message) => {
-    console.log('New message received:', newMessage);
-    setMessages(prevMessages => [...prevMessages, newMessage]);
+    console.log("New message received:", newMessage);
+    setMessages((prevMessages) => [...prevMessages, newMessage]);
   }, []);
 
   useEffect(() => {
@@ -54,20 +62,21 @@ const ChatPage: React.FC = () => {
         const userId = await getUserFromSession();
         setSenderId(userId);
 
-        const backendUrl = import.meta.env.VITE_API_URL || 'https://laso.onrender.com';
+        const backendUrl =
+          import.meta.env.VITE_API_URL || "https://laso.onrender.com";
         const response = await fetch(
           `${backendUrl}/api/chat/messages/${id}?userId=${userId}&offset=${offset}`
         );
 
         if (!response.ok) {
-          throw new Error('Failed to fetch messages');
+          throw new Error("Failed to fetch messages");
         }
 
         const data: Message[] = await response.json();
         if (data.length === 0) {
           setHasMoreMessages(false); // No more messages to load
         } else {
-          setMessages(prevMessages => [...data, ...prevMessages]); // Prepend new messages
+          setMessages((prevMessages) => [...data, ...prevMessages]); // Prepend new messages
         }
 
         await socketService.connect();
@@ -75,8 +84,8 @@ const ChatPage: React.FC = () => {
 
         await updateMessagesAsRead(); // Mark messages as read
       } catch (error) {
-        console.error('Error setting up chat:', error);
-        setError('Failed to load chat. Please try again.');
+        console.error("Error setting up chat:", error);
+        setError("Failed to load chat. Please try again.");
       } finally {
         setIsLoading(false);
       }
@@ -100,28 +109,28 @@ const ChatPage: React.FC = () => {
         createdAt: new Date().toISOString(),
       };
 
-      console.log('Sending new message:', newMessage);
+      console.log("Sending new message:", newMessage);
 
-      setMessages(prevMessages => [...prevMessages, newMessage]);
+      setMessages((prevMessages) => [...prevMessages, newMessage]);
       socketService.sendMessage(message, parseInt(id, 10));
-      setMessage('');
+      setMessage("");
     }
   };
 
   const updateMessagesAsRead = useCallback(async () => {
     const chatId = Number(id);
     if (isNaN(chatId)) {
-      console.error('Invalid chat ID:', id);
+      console.error("Invalid chat ID:", id);
       return;
     }
 
     try {
       await markMessagesAsRead(chatId);
-      setMessages(prevMessages =>
-        prevMessages.map(msg => ({ ...msg, isRead: true }))
+      setMessages((prevMessages) =>
+        prevMessages.map((msg) => ({ ...msg, isRead: true }))
       );
     } catch (error) {
-      console.error('Failed to mark messages as read:', error);
+      console.error("Failed to mark messages as read:", error);
     }
   }, [id]);
 
@@ -135,7 +144,11 @@ const ChatPage: React.FC = () => {
   }, [messages, isLoading, scrollToBottom]);
 
   const loadMoreMessages = () => {
-    setOffset(prevOffset => prevOffset + 50); // Load next messages
+    setOffset((prevOffset) => prevOffset + 50); // Load next messages
+  };
+
+  const handleDeleteChat = () => {
+    console.log("Delete chat clicked");
   };
 
   if (error) return <div>{error}</div>;
@@ -152,7 +165,33 @@ const ChatPage: React.FC = () => {
           />
           <h3 className="font-bold">Chat with {receiver.fullName}</h3>
         </div>
+        <button
+          onClick={() => setDrawerOpen(true)}
+          className="p-2 hover:bg-gray-100 rounded-full"
+        >
+          <IoPersonOutline size={24} className="text-gray-600" />
+        </button>
       </div>
+
+      {/* Drawer */}
+      <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
+        <DrawerContent>
+          <div className="p-6 space-y-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <h4 className="text-lg font-semibold">Contact Details</h4>
+                <p className="text-gray-600">{receiver.fullName}</p>
+              </div>
+              <button
+                onClick={handleDeleteChat}
+                className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"
+              >
+                <IoTrashOutline size={24} />
+              </button>
+            </div>
+          </div>
+        </DrawerContent>
+      </Drawer>
 
       {/* Chat Messages */}
       <div className="flex-1 overflow-y-auto">
@@ -162,40 +201,41 @@ const ChatPage: React.FC = () => {
           <div ref={scrollContainerRef} className="px-4 py-2 pb-16">
             {/* Only show "Load More" if there are more messages */}
             {hasMoreMessages && (
-  <button 
-    onClick={loadMoreMessages} 
-    className="flex items-center justify-center bg-blue-500 text-white font-semibold rounded-md px-4 py-2 mt-4 transition-transform duration-200 hover:scale-105 active:scale-95"
-  >
-    <IoArrowForward className="mr-2" /> {/* Import the icon */}
-    Load More
-  </button>
-)}
+              <button
+                onClick={loadMoreMessages}
+                className="flex items-center justify-center bg-blue-500 text-white font-semibold rounded-md px-4 py-2 mt-4 transition-transform duration-200 hover:scale-105 active:scale-95"
+              >
+                <IoArrowForward className="mr-2" /> {/* Import the icon */}
+                Load More
+              </button>
+            )}
             {messages.map((msg, index) => (
               <div
                 key={msg.id}
                 className={`flex ${
                   msg.sender?.supabaseId === senderId
-                    ? 'justify-end'
-                    : 'justify-start'
+                    ? "justify-end"
+                    : "justify-start"
                 } mb-2`}
                 ref={index === messages.length - 1 ? lastMessageRef : null}
               >
                 <div
                   className={`max-w-xs p-3 rounded-lg ${
                     msg.sender?.supabaseId === senderId
-                      ? 'bg-sky-400 text-white'
-                      : 'bg-gray-200 text-black'
+                      ? "bg-sky-400 text-white"
+                      : "bg-gray-200 text-black"
                   }`}
                 >
                   <p>{msg.content}</p>
-                  {msg.translatedContent && msg.sender?.supabaseId !== senderId && (
-                    <>
-                      <hr className="border-t border-gray-300 my-2" />
-                      <p className="text-sm text-gray-500 mt-1">
-                        {msg.translatedContent}
-                      </p>
-                    </>
-                  )}
+                  {msg.translatedContent &&
+                    msg.sender?.supabaseId !== senderId && (
+                      <>
+                        <hr className="border-t border-gray-300 my-2" />
+                        <p className="text-sm text-gray-500 mt-1">
+                          {msg.translatedContent}
+                        </p>
+                      </>
+                    )}
                 </div>
               </div>
             ))}
@@ -211,8 +251,7 @@ const ChatPage: React.FC = () => {
           onChange={(e) => setMessage(e.target.value)}
           placeholder="Type a message"
           className="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:outline-none"
-          onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-          autoFocus
+          onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
         />
         <button
           onClick={handleSendMessage}
