@@ -173,7 +173,7 @@ const Home: React.FC = () => {
                     onClick={() =>
                       navigate(`/group/${chat.id}`, {
                         state: {
-                          receiver: chat.receiver,
+                          group: chat,
                         },
                       })
                     }
