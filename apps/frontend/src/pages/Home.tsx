@@ -12,6 +12,7 @@ import NavBar from "@/components/ui/NavBar";
 interface Chat {
   id: string;
   userId?: number;
+  name?: string;
   receiver: {
     image?: string;
     fullName?: string;
@@ -170,7 +171,7 @@ const Home: React.FC = () => {
                     key={chat.id}
                     className={`flex justify-between items-center mb-4 relative`}
                     onClick={() =>
-                      navigate(`/chat/${chat.id}`, {
+                      navigate(`/group/${chat.id}`, {
                         state: {
                           receiver: chat.receiver,
                         },
@@ -207,7 +208,7 @@ const Home: React.FC = () => {
                       )}
                       <div>
                         <h3 className="font-semibold">
-                          {chat.receiver?.fullName || "Unknown Group"}
+                          {chat.name || "Unknown Group"}
                         </h3>
                         <p
                           className={`text-sm truncate w-48 whitespace-nowrap ${
