@@ -93,10 +93,12 @@ const NavBar: React.FC<NavBarProps> = () => {
 
           <div className="relative w-16">
             <button
-              className="absolute left-1/2 bottom-1/2 transform -translate-x-1/2 translate-y-1/4
-                         flex items-center justify-center bg-sky-950 text-white p-3 
-                         rounded-full border-8 border-gray-50 hover:bg-sky-900
-                         transition-all duration-300 ease-in-out"
+              className="absolute bottom-1/2 transform translate-y-1/2 flex items-center justify-center bg-sky-950 text-white p-3 rounded-full border-8"
+              style={{
+                left: "50%",
+                transform: "translate(-50%, 15%)",
+                borderColor: "#f3f4f6",
+              }}
               onClick={handleNewChatClick}
             >
               <RiChatNewFill size={30} />
