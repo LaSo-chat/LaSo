@@ -31,13 +31,13 @@ const SignUp: React.FC = () => {
                 <div className="text-center mb-6">
                     <div className="relative mb-6">
                         <img
-                            src="/checkout.svg" // Placeholder for the square image
+                            src="/checkout.webp" // Placeholder for the square image
                             alt="Square Image"
                             className="mx-auto w-150 h-100 object-cover rounded-2xl"
                         />
                     </div>
                     <h1 className="font-poppins italic text-4xl font-bold">LaSo</h1>
-                    <p className="text-gray-600">Sign into your account</p>
+                    <p className="text-gray-700 font-bold">Sign into your account</p>
                 </div>
 
                 {/* Form */}
