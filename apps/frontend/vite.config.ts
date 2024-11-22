@@ -16,23 +16,23 @@ export default defineConfig({
         description: 'An app that enables real-time translated chat between users of different languages.',
         icons: [
           {
-            src: '/android-chrome-192x192.png',
+            src: '/web/icon-192.png',
             sizes: '192x192',
             type: 'image/png',
           },
           {
-            src: '/android-chrome-512x512.png',
+            src: '/web/icon-512.png',
             sizes: '512x512',
             type: 'image/png',
           },
           {
-            src: '/apple-touch-icon.png',
+            src: '/web/apple-touch-icon.png',
             sizes: '180x180',
             type: 'image/png',
           },
           {
-            src: '/maskable_icon.png',
-            sizes: '225x225',
+            src: '/web/icon-192-maskable.png',
+            sizes: '192x192',
             type: 'image/png',
             purpose: 'maskable',
           },

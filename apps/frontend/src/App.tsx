@@ -18,6 +18,7 @@ import GroupsPage from "./pages/GroupsPage";
 import DirectsPage from "./pages/DirectsPage";
 import { SocketProvider } from "./contexts/SocketContext";
 import GroupChatPage from "./pages/GroupChatPage";
+import { PwaInstallPopup } from "./components/PwaInstallPopup";
 
 const App: React.FC = () => {
   useAuth(); // Check session and restore authentication state
@@ -52,6 +53,7 @@ const App: React.FC = () => {
         <Route path="/groups" element={<GroupsPage />} />
         <Route path="/directs" element={<DirectsPage />} />
       </Routes>
+      <PwaInstallPopup />
     </SocketProvider>
   );
 };
