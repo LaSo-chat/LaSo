@@ -1,9 +1,11 @@
-// src/pages/Home.tsx
 import React, { useState, useEffect } from "react";
 import { IoSearch, IoEllipse } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
-import { getUnreadContactsAndGroupsForUser } from "../services/chatService"; // Import the updated function
+import { useDispatch } from 'react-redux';
+import { getUnreadContactsAndGroupsForUser } from "../services/chatService";
 import { getUserProfile } from "../services/userService";
+import { logout } from '../app/slices/authSlice';
+import { supabase } from '../services/authService';
 import Avatar from "boring-avatars";
 import moment from "moment";
 import Loader from "@/components/Loader";
@@ -23,7 +25,7 @@ interface Chat {
     isRead?: boolean;
     receiverId?: number;
   };
-  isGroupChat?: boolean;  // added to differentiate between direct and group chats
+  isGroupChat?: boolean;
 }
 
 const Home: React.FC = () => {
@@ -31,37 +33,83 @@ const Home: React.FC = () => {
   const [groupChats, setGroupChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const handleSessionError = async () => {
+    // Clear local storage
+    localStorage.clear();
+    
+    // Sign out from Supabase
+    await supabase.auth.signOut();
+    
+    // Update Redux state
+    dispatch(logout());
+    
+    // Navigate to login
+    navigate('/login');
+  };
+
+  useEffect(() => {
+    // Check session on component mount
+    const checkSession = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error || !session) {
+        handleSessionError();
+        return false;
+      }
+      return true;
+    };
+
+    checkSession();
+
+    // Set up auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        handleSessionError();
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     async function fetchUserProfile() {
       try {
-        const userData = await getUserProfile(); // Fetch user's profile from Supabase
+        const userData = await getUserProfile();
         localStorage.setItem("userProfile", JSON.stringify(userData));
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error fetching user profile:", error);
+        // Check if error is related to session
+        if (error.message?.includes('session') || error.message?.includes('authentication')) {
+          handleSessionError();
+        }
       }
     }
 
-    fetchUserProfile(); // Call the function to fetch user profile
+    fetchUserProfile();
   }, []);
 
   useEffect(() => {
     async function fetchUnreadChats() {
       try {
-        const unreadData = await getUnreadContactsAndGroupsForUser(); // Fetch unread contacts and groups
-        console.log(unreadData,"+++++++++++++++++++++unreadData");
-        
-        const directChats = unreadData.contacts; // Contacts are considered as direct chats
-        const groupChats = unreadData.groups;   // Groups are considered as group chats
+        const unreadData = await getUnreadContactsAndGroupsForUser();
+        const directChats = unreadData.contacts;
+        const groupChats = unreadData.groups;
         setDirectChats(directChats);
         setGroupChats(groupChats);
-      } catch (error) {
+      } catch (error: any) {
         console.error("Failed to fetch unread chats:", error);
+        // Check if error is related to session
+        if (error.message?.includes('session') || error.message?.includes('authentication')) {
+          handleSessionError();
+        }
       } finally {
         setLoading(false);
       }
     }
-    fetchUnreadChats(); // Call the function to fetch unread chats
+    fetchUnreadChats();
   }, []);
 
   const formatDate = (dateString?: string): string => {
