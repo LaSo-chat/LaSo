@@ -190,7 +190,7 @@ const GroupChatPage: React.FC = () => {
           />
           <div>
             <h3 className="font-bold">{group.name}</h3>
-            <p className="text-sm text-gray-500">{group.members.length} members</p>
+            <p className="text-sm text-gray-500">{group.members?.length} members</p>
           </div>
         </div>
         <IoEllipsisHorizontalOutline
@@ -291,9 +291,9 @@ const GroupChatPage: React.FC = () => {
             </div>
             
             <div className="mt-6">
-              <h3 className="text-lg font-semibold mb-3">Members ({group.members.length})</h3>
+              <h3 className="text-lg font-semibold mb-3">Members ({group.members?.length})</h3>
               <div className="space-y-3">
-                {group.members.map((member) => (
+                {group.members?.map((member) => (
                   <div key={member.id} className="flex items-center space-x-3">
                     <Avatar
                       size={32}

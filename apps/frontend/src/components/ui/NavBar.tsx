@@ -5,11 +5,12 @@ import {
   IoPeopleOutline,
   IoEllipsisHorizontalOutline,
   IoClose,
+  IoPeopleSharp,
 } from "react-icons/io5";
 import { RiChatNewFill } from "react-icons/ri";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import SettingsDrawer from "@/components/right-drawer";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { startNewChat } from "@/services/chatService";
 import { IconType } from "react-icons";
 
@@ -19,13 +20,16 @@ interface NavItemProps {
   label: string;
 }
 
-interface NavBarProps {}
+interface NavBarProps {
+  onNewGroupClick?: () => void;
+}
 
-const NavBar: React.FC<NavBarProps> = () => {
+const NavBar: React.FC<NavBarProps> = ({ onNewGroupClick }) => {
   const [isNewChatDrawerOpen, setIsNewChatDrawerOpen] = useState(false);
   const [isControlledDrawerOpen, setIsControlledDrawerOpen] = useState(false);
   const [newChatId, setNewChatId] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleNewChatClick = () => setIsNewChatDrawerOpen(true);
   const closeNewChatDrawer = () => setIsNewChatDrawerOpen(false);
@@ -80,6 +84,38 @@ const NavBar: React.FC<NavBarProps> = () => {
     );
   };
 
+  const renderActionButton = () => {
+    if (location.pathname === "/groups") {
+      return (
+        <button
+          className="absolute bottom-1/2 transform translate-y-1/2 flex items-center justify-center bg-sky-950 text-white p-3 rounded-full border-8"
+          onClick={onNewGroupClick}
+          style={{
+            left: "50%",
+            transform: "translate(-50%, 15%)",
+            borderColor: "#f3f4f6",
+          }}
+        >
+          <IoPeopleSharp size={30} />
+        </button>
+      );
+    }
+
+    return (
+      <button
+        className="absolute bottom-1/2 transform translate-y-1/2 flex items-center justify-center bg-sky-950 text-white p-3 rounded-full border-8"
+        style={{
+          left: "50%",
+          transform: "translate(-50%, 15%)",
+          borderColor: "#f3f4f6",
+        }}
+        onClick={handleNewChatClick}
+      >
+        <RiChatNewFill size={30} />
+      </button>
+    );
+  };
+
   return (
     <>
       <div className="fixed bottom-0 w-full bg-white shadow-lg z-10">
@@ -92,17 +128,7 @@ const NavBar: React.FC<NavBarProps> = () => {
           />
 
           <div className="relative w-16">
-            <button
-              className="absolute bottom-1/2 transform translate-y-1/2 flex items-center justify-center bg-sky-950 text-white p-3 rounded-full border-8"
-              style={{
-                left: "50%",
-                transform: "translate(-50%, 15%)",
-                borderColor: "#f3f4f6",
-              }}
-              onClick={handleNewChatClick}
-            >
-              <RiChatNewFill size={30} />
-            </button>
+            {renderActionButton()}
           </div>
 
           <NavItem path="/groups" icon={IoPeopleOutline} label="Groups" />

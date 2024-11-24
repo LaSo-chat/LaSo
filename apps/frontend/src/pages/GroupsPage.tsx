@@ -1,13 +1,8 @@
 import React, { useState, useEffect } from "react";
 import {
   IoSearch,
-  IoHomeOutline,
   IoClose,
   IoEllipse,
-  IoChatboxEllipsesOutline,
-  IoPeopleOutline,
-  IoEllipsisHorizontalOutline,
-  IoPeopleSharp,
   IoCheckmarkCircle,
 } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
@@ -17,7 +12,7 @@ import Avatar from "boring-avatars";
 import moment from "moment";
 import Loader from "@/components/Loader";
 import { getUserFromSession } from '../services/authService';
-
+import NavBar from "@/components/ui/NavBar";
 
 interface GroupMember {
   id: number;
@@ -57,8 +52,8 @@ const GroupsPage: React.FC = () => {
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [availableMembers, setAvailableMembers] = useState<GroupMember[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [membersLoading, setMembersLoading] = useState(false);
   const navigate = useNavigate();
-
 
   // Fetch groups
   useEffect(() => {
@@ -93,34 +88,33 @@ const GroupsPage: React.FC = () => {
   // Fetch available members
   useEffect(() => {
     const fetchMembers = async () => {
-      try {
-        const userId = await getUserFromSession();
-        const backendUrl = import.meta.env.VITE_API_URL || 'https://laso.onrender.com';
-        const response = await fetch(`${backendUrl}/api/user/contacts?userId=${userId}`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          },
-        });
+      if (isNewGroupDrawerOpen) {
+        try {
+          setMembersLoading(true);
+          const userId = await getUserFromSession();
+          const backendUrl = import.meta.env.VITE_API_URL || 'https://laso.onrender.com';
+          const response = await fetch(`${backendUrl}/api/user/contacts?userId=${userId}`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            },
+          });
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch members');
+          if (!response.ok) {
+            throw new Error('Failed to fetch members');
+          }
+
+          const data = await response.json();
+          setAvailableMembers(data);
+        } catch (err) {
+          console.error('Error fetching members:', err);
+        } finally {
+          setMembersLoading(false);
         }
-
-        const data = await response.json();
-        setAvailableMembers(data);
-      } catch (err) {
-        console.error('Error fetching members:', err);
       }
     };
 
-    if (isNewGroupDrawerOpen) {
-      fetchMembers();
-    }
+    fetchMembers();
   }, [isNewGroupDrawerOpen]);
-
-  const handleNewGroupClick = () => {
-    setIsNewGroupDrawerOpen(true);
-  };
 
   const closeNewGroupDrawer = () => {
     setIsNewGroupDrawerOpen(false);
@@ -129,8 +123,6 @@ const GroupsPage: React.FC = () => {
     setSelectedMembers([]);
     setSearchTerm("");
   };
-
-  const openControlledDrawer = () => setIsControlledDrawerOpen(true);
 
   const closeControlledDrawer = () => setIsControlledDrawerOpen(false);
 
@@ -294,47 +286,10 @@ const GroupsPage: React.FC = () => {
       </div>
 
       {/* Bottom Navigation Bar */}
-      <div className="fixed bottom-0 w-full bg-white shadow-lg z-10">
-        <div className="relative p-4 flex justify-around items-center">
-          <IoHomeOutline 
-            size={24} 
-            className="text-sky-700 cursor-pointer"
-            onClick={() => navigate("/home")}
-          />
-          
-          <IoChatboxEllipsesOutline
-            size={24}
-            className="text-sky-700 cursor-pointer mr-6"
-            onClick={() => navigate("/directs")}
-          />
-
-          <button
-            className="absolute bottom-1/2 transform translate-y-1/2 flex items-center justify-center bg-sky-950 text-white p-3 rounded-full border-8"
-            onClick={handleNewGroupClick}
-            style={{
-              left: "50%",
-              transform: "translate(-50%, 10%)",
-              borderColor: "#f3f4f6",
-            }}
-          >
-            <IoPeopleSharp size={30} />
-          </button>
-
-          <IoPeopleOutline
-            size={24}
-            className="text-sky-700 cursor-pointer ml-6"
-          />
-
-          <IoEllipsisHorizontalOutline
-            size={24}
-            className="text-sky-700 cursor-pointer"
-            onClick={openControlledDrawer}
-          />
-        </div>
-      </div>
+       <NavBar onNewGroupClick={() => setIsNewGroupDrawerOpen(true)} />
 
       {/* Drawer for New Group */}
-      <Drawer open={isNewGroupDrawerOpen} onClose={closeNewGroupDrawer}>
+      <Drawer open={isNewGroupDrawerOpen} onClose={() => setIsNewGroupDrawerOpen(false)}>
         <DrawerContent>
           <div className="flex justify-between items-center p-4">
             <h2 className="text-lg font-semibold">Create New Group</h2>
@@ -367,31 +322,35 @@ const GroupsPage: React.FC = () => {
                 placeholder="Search members..."
                 className="w-full p-3 border rounded-full mb-4"
               />
-              <div className="max-h-48 overflow-y-auto space-y-2">
-                {filteredMembers.map((member) => (
-                  <div
-                    key={member.id}
-                    onClick={() => toggleMemberSelection(member.email)}
-                    className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 cursor-pointer"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <Avatar
-                        size={32}
-                        name={member.fullName}
-                        variant="beam"
-                        colors={["#e81e4a", "#0b1d21", "#078a85", "#68baab", "#edd5c5"]}
-                      />
-                      <div>
-                        <p className="font-medium">{member.fullName}</p>
-                        <p className="text-sm text-gray-500">{member.email}</p>
+              {membersLoading ? (
+                <Loader />
+              ) : (
+                <div className="max-h-48 overflow-y-auto space-y-2">
+                  {filteredMembers.map((member) => (
+                    <div
+                      key={member.id}
+                      onClick={() => toggleMemberSelection(member.email)}
+                      className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 cursor-pointer"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <Avatar
+                          size={32}
+                          name={member.fullName}
+                          variant="beam"
+                          colors={["#e81e4a", "#0b1d21", "#078a85", "#68baab", "#edd5c5"]}
+                        />
+                        <div>
+                          <p className="font-medium">{member.fullName}</p>
+                          <p className="text-sm text-gray-500">{member.email}</p>
+                        </div>
                       </div>
+                      {selectedMembers.includes(member.email) && (
+                        <IoCheckmarkCircle className="text-sky-500" size={24} />
+                      )}
                     </div>
-                    {selectedMembers.includes(member.email) && (
-                      <IoCheckmarkCircle className="text-sky-500" size={24} />
-                    )}
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
               <p className="text-sm text-gray-500 mt-2">
                 Selected: {selectedMembers.length} members
               </p>
@@ -399,6 +358,7 @@ const GroupsPage: React.FC = () => {
             <button
               onClick={handleCreateGroup}
               className="bg-sky-500 text-white p-3 rounded-full w-full"
+              disabled={selectedMembers.length > 0}
             >
               Create Group
             </button>
