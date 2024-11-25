@@ -1,14 +1,14 @@
-/* Loader styling */
+/* Moderately Smaller Loader styling */
 .loader-circle {
   position: relative;
-  width: 64px;
-  height: 64px;
+  width: 48px; /* Slightly reduced size */
+  height: 48px; /* Slightly reduced size */
 }
 
 .circle {
   width: 100%;
   height: 100%;
-  border: 8px solid #000;
+  border: 6px solid #000; /* Reduced border width */
   border-radius: 50%;
   border-top-color: transparent;
   position: absolute;
@@ -18,26 +18,26 @@
 }
 
 .circle:nth-child(2) {
-  width: 48px;
-  height: 48px;
-  top: 8px;
-  left: 8px;
+  width: 36px; /* Moderately reduced size */
+  height: 36px; /* Moderately reduced size */
+  top: 6px; /* Adjusted positioning */
+  left: 6px; /* Adjusted positioning */
   animation-duration: 1.5s;
 }
 
 .circle:nth-child(3) {
-  width: 32px;
-  height: 32px;
-  top: 16px;
-  left: 16px;
+  width: 24px; /* Moderately reduced size */
+  height: 24px; /* Moderately reduced size */
+  top: 12px; /* Adjusted positioning */
+  left: 12px; /* Adjusted positioning */
   animation-duration: 2s;
 }
 
 @keyframes spin {
   0% {
-      transform: rotate(0deg);
+    transform: rotate(0deg);
   }
   100% {
-      transform: rotate(360deg);
+    transform: rotate(360deg);
   }
 }

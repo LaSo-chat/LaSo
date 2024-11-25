@@ -3,6 +3,19 @@ import { supabase } from './authService';
 
 const SOCKET_URL = import.meta.env.VITE_WEBSOCKET_URL || 'https://laso.onrender.com';
 
+interface Translation {
+  userId: number;
+  translatedContent: string;
+}
+interface User {
+  id: number;
+  supabaseId: string;
+  email: string;
+  fullName: string;
+  profilePicture?: string;
+  preferredLang: string;
+}
+
 interface Message {
   id: number;
   content: string;
@@ -12,12 +25,24 @@ interface Message {
   createdAt: string;
 }
 
+interface GroupMessage {
+  id: number;
+  content: string;
+  translatedContent?: string;  // Added translated content
+  groupId: number;
+  senderId: number;
+  createdAt: string;
+  isRead: boolean;
+  sender: User;
+  translations: Translation[];
+}
+
 class SocketService {
   private static instance: SocketService;
   private socket: Socket | null = null;
   private userId: string | null = null;
   private messageListeners: Set<(message: Message) => void> = new Set();
-  private groupMessageListeners: Set<(message: Message) => void> = new Set(); // Added for group messages
+  private groupMessageListeners: Set<(message: GroupMessage) => void> = new Set(); // Added for group messages
   private connectionPromise: Promise<Socket | null> | null = null;
   private isConnecting: boolean = false;
 
@@ -108,7 +133,7 @@ class SocketService {
       this.messageListeners.forEach(listener => listener(data));
     });
 
-    this.socket.on('groupMessage', (data: Message) => { // Added listener for group messages
+    this.socket.on('groupMessage', (data: GroupMessage) => { // Added listener for group messages
       console.log('Group message received:', data);
       this.groupMessageListeners.forEach(listener => listener(data));
     });
@@ -151,12 +176,12 @@ class SocketService {
   }
 
   // Listen for group messages
-  public onGroupMessage(callback: (message: Message) => void) {
+  public onGroupMessage(callback: (message: GroupMessage) => void) {
     this.groupMessageListeners.add(callback);
   }
 
   // Remove listener for group messages
-  public offGroupMessage(callback: (message: Message) => void) {
+  public offGroupMessage(callback: (message: GroupMessage) => void) {
     this.groupMessageListeners.delete(callback);
   }
 

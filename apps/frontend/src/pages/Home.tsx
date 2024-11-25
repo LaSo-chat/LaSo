@@ -79,6 +79,8 @@ const Home: React.FC = () => {
       try {
         const userData = await getUserProfile();
         localStorage.setItem("userProfile", JSON.stringify(userData));
+        localStorage.setItem("userId", JSON.stringify(userData.id));
+        localStorage.setItem("userSupabaseId", JSON.stringify(userData.supabaseId));
       } catch (error: any) {
         console.error("Error fetching user profile:", error);
         // Check if error is related to session

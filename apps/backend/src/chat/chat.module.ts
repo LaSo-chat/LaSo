@@ -3,9 +3,10 @@ import { ChatGateway } from './chat.gateway';
 import { ChatService } from './chat.service';
 import { ChatController } from './chat.controller';
 import { PrismaService } from '@/prisma/prisma.service';
+import { SocketService } from '@/shared/services/socket/socket.service';
 
 @Module({
-  providers: [ChatGateway, ChatService, PrismaService],
+  providers: [ChatGateway, ChatService, PrismaService, SocketService],
   controllers: [ChatController]
 })
 export class ChatModule {}

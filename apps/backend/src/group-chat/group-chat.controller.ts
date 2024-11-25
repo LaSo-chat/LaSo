@@ -67,24 +67,24 @@ import {
       return this.groupChatService.getGroupMessages(userId, parsedGroupId, parsedOffset);
     }
   
-    @Post(':groupId/messages')
-    async sendGroupMessage(
-      @Param('groupId') groupId: string,
-      @Body() body: { userId: string; content: string },
-    ) {
-      const { userId, content } = body;
+    // @Post(':groupId/messages')
+    // async sendGroupMessage(
+    //   @Param('groupId') groupId: string,
+    //   @Body() body: { userId: string; content: string },
+    // ) {
+    //   const { userId, content } = body;
   
-      if (!userId || !content || !groupId) {
-        throw new BadRequestException('Missing required fields');
-      }
+    //   if (!userId || !content || !groupId) {
+    //     throw new BadRequestException('Missing required fields');
+    //   }
   
-      const parsedGroupId = parseInt(groupId, 10);
-      if (isNaN(parsedGroupId)) {
-        throw new BadRequestException('Invalid group ID');
-      }
+    //   const parsedGroupId = parseInt(groupId, 10);
+    //   if (isNaN(parsedGroupId)) {
+    //     throw new BadRequestException('Invalid group ID');
+    //   }
   
-      return this.groupChatService.createGroupMessage(userId, parsedGroupId, content);
-    }
+    //   return this.groupChatService.createGroupMessage(userId, parsedGroupId, content);
+    // }
   
     @Post(':groupId/messages/read')
     async markGroupMessagesAsRead(
