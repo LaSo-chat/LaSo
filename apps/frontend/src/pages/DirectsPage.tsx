@@ -3,7 +3,6 @@ import React, { useState, useEffect } from "react";
 import { IoSearch, IoEllipse } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
 import { getContactsForUser } from "../services/chatService";
-import { getUserProfile } from "../services/userService";
 import Avatar from "boring-avatars";
 import moment from "moment";
 import Loader from "@/components/Loader";
