@@ -31,21 +31,21 @@ const DirectsPage: React.FC = () => {
   // const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
 
-  useEffect(() => {
-    async function fetchUserProfile() {
-      try {
-        const userData = await getUserProfile(); // Fetch user's profile from Supabase
-        localStorage.setItem("userProfile", JSON.stringify(userData));
-        // if (userData) {
-        //     setUserFullName(userData.fullName); // Set user's full name
-        // }
-      } catch (error) {
-        console.error("Error fetching user profile:", error);
-      }
-    }
+  // useEffect(() => {
+  //   async function fetchUserProfile() {
+  //     try {
+  //       const userData = await getUserProfile(); // Fetch user's profile from Supabase
+  //       localStorage.setItem("userProfile", JSON.stringify(userData));
+  //       // if (userData) {
+  //       //     setUserFullName(userData.fullName); // Set user's full name
+  //       // }
+  //     } catch (error) {
+  //       console.error("Error fetching user profile:", error);
+  //     }
+  //   }
 
-    fetchUserProfile(); // Call the function to fetch user profile
-  }, []);
+  //   fetchUserProfile(); // Call the function to fetch user profile
+  // }, []);
 
   useEffect(() => {
     async function fetchContacts() {
