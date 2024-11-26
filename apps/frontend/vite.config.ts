@@ -63,4 +63,12 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'), // Allows using "@/..." as shorthand for "./src/..."
     },
   },
+  build: {
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+        'firebase-messaging-sw': path.resolve(__dirname, 'public/firebase-messaging-sw.js'),
+      },
+    },
+  },
 });

@@ -19,6 +19,7 @@ model User {
   dateOfBirth      DateTime? // Optional field for DOB
   preferredLang    String    // Preferred language (e.g., 'en', 'fr')
   profilePicture   String?   // Profile picture URL
+  fcmToken         String?   // FCM token field
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
   messagesSent     Message[] @relation("SentMessages")

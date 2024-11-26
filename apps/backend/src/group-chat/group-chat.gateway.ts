@@ -54,7 +54,7 @@ export class GroupChatGateway {
         this.socketService.emitToUser(member.user.supabaseId, 'groupMessage', message);
       });
 
-      client.emit('groupMessageSent', message);
+      // client.emit('groupMessageSent', message);
     } catch (error) {
       client.emit('groupMessageError', { error: 'Failed to send group message' });
       console.error('Error sending group message:', error);

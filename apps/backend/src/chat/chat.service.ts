@@ -2,12 +2,18 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TranslationServiceClient } from '@google-cloud/translate'; // Import v3 client
+import { NotificationService } from '@/notification/notification.service';
+import { SocketService } from '@/shared/services/socket/socket.service';
 
 @Injectable()
 export class ChatService {
   private translationClient: TranslationServiceClient;
 
-  constructor(private prisma: PrismaService) {
+  constructor(
+    private prisma: PrismaService,
+    private notificationService: NotificationService, // FCM service
+    private socketService: SocketService // WebSocket service
+  ) {
     // Initialize the translation client
     this.translationClient = new TranslationServiceClient({
       projectId: process.env.GOOGLE_CLOUD_PROJECT,
@@ -15,12 +21,11 @@ export class ChatService {
     });
   }
 
-  // Create a message between two users with translation support
   async createMessage(senderId: number, receiverId: number, content: string) {
-    console.log(senderId, "senderId");
-    console.log(receiverId, "receiverId");
-    console.log(content, "content");
-
+    console.log(senderId, 'senderId');
+    console.log(receiverId, 'receiverId');
+    console.log(content, 'content');
+  
     // Step 1: Create the message
     const message = await this.prisma.message.create({
       data: {
@@ -29,36 +34,76 @@ export class ChatService {
         content,
       },
     });
-
+  
     // Step 2: Fetch the receiver's preferred language
     const receiver = await this.prisma.user.findUnique({
       where: { id: receiverId },
     });
-
+  
     if (!receiver) {
       throw new NotFoundException('Receiver not found');
     }
 
-    // Step 3: Check if the message needs to be translated (if the receiver has a different preferred language)
-    let translatedContent = content;  // Default to original content
+    // Check if the contact exists
+    const contact = await this.prisma.contact.findFirst({
+      where: {
+        userId: senderId,
+        receiverId: receiverId,
+      },
+    });
 
+    if (!contact) {
+      throw new NotFoundException('Contact not found');
+    }
+  
+    // Step 3: Translate the message if needed
+    let translatedContent = content;
     if (senderId !== receiverId && receiver.preferredLang) {
-      // Translate the content if the sender and receiver are different and the receiver has a preferred language
       const [translation] = await this.translationClient.translateText({
         contents: [content],
         targetLanguageCode: receiver.preferredLang,
-        parent: `projects/${process.env.GOOGLE_CLOUD_PROJECT}/locations/global`, // Add your Google Cloud project ID
+        parent: `projects/${process.env.GOOGLE_CLOUD_PROJECT}/locations/global`,
       });
       translatedContent = translation.translations[0].translatedText;
     }
+  
+    const messageWithTranslation = { ...message, translatedContent, contact };
+  
+    // Step 4: Check if receiver is online
+    // const receiverIdString = receiverId.toString(); // Convert number to string
+    // console.log(receiverIdString,'-------receiverIdString');/
+    
+    const isOnline = await this.socketService.isUserOnline(receiver.supabaseId);
+    // const isOnline = false;
+  
+    if (isOnline) {
+      // Send in-app notification
+      this.socketService.sendInAppNotification(receiver.supabaseId, 'notification', {
+        type: 'notification',
+        data: {
+          messageWithTranslation:  messageWithTranslation,
+          contact: contact
+        },
+      });
+    } else {
+      // Send FCM notification
+      await this.notificationService.sendFCM({
+        token: receiver.fcmToken, // Assuming FCM token is stored in the database
+        title: receiver.fullName,
+        body: messageWithTranslation.content,
+        data: {
+          content: content,
+          contactId: contact.id.toString(),
+          translatedContent: translatedContent
 
-    // Step 4: Add the translated content to the message object
-    const messageWithTranslation = { ...message, translatedContent };
-
-    console.log(messageWithTranslation, "messageWithTranslation");
-
+        },
+      });
+      console.log(`FCM notification sent to user ${receiverId}`);
+    }
+  
     return messageWithTranslation;
   }
+  
 
   // Get messages between two users (Supabase ID for sender, internal ID for receiver)
 async getMessages(supabaseId: string, contactId: number, offset: number = 0) {
@@ -107,6 +152,8 @@ async getMessages(supabaseId: string, contactId: number, offset: number = 0) {
 
   // Step 4: Reverse the order to display messages from oldest to newest
   const sortedMessages = messages.reverse();
+
+  
 
   // Step 5: Translate messages if necessary
   const translatedMessages = await Promise.all(

@@ -21,8 +21,13 @@ interface Message {
   content: string;
   senderId: number;
   receiverId: number;
-  groupId?: number; // Optional for group messages
   createdAt: string;
+  isRead: boolean;
+  contact?: {
+    id: number;
+    userId: number;
+    receiverId: number;
+  };
 }
 
 interface GroupMessage {

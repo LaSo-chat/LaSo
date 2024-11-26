@@ -1,12 +1,18 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TranslationServiceClient } from '@google-cloud/translate';
+import { NotificationService } from '@/notification/notification.service';
+import { SocketService } from '@/shared/services/socket/socket.service';
 
 @Injectable()
 export class GroupChatService {
   private translationClient: TranslationServiceClient;
 
-  constructor(private prisma: PrismaService) {
+  constructor(
+    private prisma: PrismaService,
+    private notificationService: NotificationService, // FCM service
+    private socketService: SocketService
+  ) {
     this.translationClient = new TranslationServiceClient({
       projectId: process.env.GOOGLE_CLOUD_PROJECT,
       keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS,
@@ -131,6 +137,9 @@ export class GroupChatService {
           userId: sender.id,
         },
       },
+      include: {
+        group: true, // Include group details
+      },
     });
 
     if (!membership) {
@@ -176,10 +185,50 @@ export class GroupChatService {
       })
     );
 
-    return {
-      ...message,
-      translations: translations.filter(Boolean),
-    };
+// Prepare group message data
+const messageWithTranslations = {
+  ...message,
+  translations: translations.filter(Boolean),
+};
+
+// Send notifications to group members
+await Promise.all(
+  groupMembers.map(async ({ user }) => {
+    // Find the translated content for this user
+    const translatedContent = translations.find(t => t?.userId === user.id)?.translatedContent || content;
+
+    // Check if user is online
+    const isOnline = await this.socketService.isUserOnline(user.supabaseId);
+
+    if (isOnline) {
+      // Send in-app notification
+      this.socketService.sendInAppNotification(user.supabaseId, 'group_notification', {
+        type: 'group_notification',
+        data: {
+          messageWithTranslations: messageWithTranslations,
+          group: membership.group
+        },
+      });
+    } else {
+      // Send FCM notification if user is offline
+      if (user.fcmToken) {
+        await this.notificationService.sendFCM({
+          token: user.fcmToken,
+          title: `New message in ${membership.group.name}`, // Assuming group has a name property
+          body: translatedContent,
+          data: {
+            groupId: groupId.toString(),
+            messageId: message.id.toString(),
+            translatedContent: translatedContent,
+          },
+        });
+        console.log(`FCM notification sent to user ${user.id} for group ${groupId}`);
+      }
+    }
+  })
+);
+
+return messageWithTranslations;
   }
 
   // Get messages for a group

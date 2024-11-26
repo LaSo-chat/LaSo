@@ -28,6 +28,36 @@ interface LocationState {
   receiver: { fullName: string };
 }
 
+// Function to format date and time
+const formatMessageTimestamp = (timestamp: string): string => {
+  const date = new Date(timestamp);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+
+  // Format time
+  const timeOptions: Intl.DateTimeFormatOptions = {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  };
+  const formattedTime = date.toLocaleTimeString(undefined, timeOptions);
+
+  // Determine date display
+  if (date.toDateString() === today.toDateString()) {
+    return `Today, ${formattedTime}`;
+  } else if (date.toDateString() === yesterday.toDateString()) {
+    return `Yesterday, ${formattedTime}`;
+  } else {
+    const dateOptions: Intl.DateTimeFormatOptions = {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    };
+    return `${date.toLocaleDateString(undefined, dateOptions)}, ${formattedTime}`;
+  }
+};
+
 const ChatPage: React.FC = () => {
   const { isConnected } = useSocket(); // Get the socket connection status from the SocketContext
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -238,6 +268,13 @@ const ChatPage: React.FC = () => {
                         </p>
                       </>
                     )}
+                    <p className={`text-xs mt-1 ${
+                    msg.sender?.supabaseId === senderId
+                      ? "text-sky-100"
+                      : "text-gray-500"
+                  }`}>
+                    {formatMessageTimestamp(msg.createdAt)}
+                  </p>
                 </div>
               </div>
             ))}

@@ -1,8 +1,8 @@
-// src/pages/Home.tsx
 import React, { useState, useEffect } from "react";
 import { IoSearch, IoEllipse } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
 import { getContactsForUser } from "../services/chatService";
+import { socketService } from "../services/socketService";
 import Avatar from "boring-avatars";
 import moment from "moment";
 import Loader from "@/components/Loader";
@@ -12,6 +12,7 @@ interface Chat {
   id: string;
   userId?: number;
   receiver: {
+    id?: number;
     image?: string;
     fullName?: string;
   };
@@ -23,28 +24,24 @@ interface Chat {
   };
 }
 
+interface Message {
+  id: number;
+  content: string;
+  senderId: number;
+  receiverId: number;
+  createdAt: string;
+  isRead: boolean;
+  contact?: {
+    id: number;
+    userId: number;
+    receiverId: number;
+  };
+}
+
 const DirectsPage: React.FC = () => {
   const [chats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);
-  // const [userFullName, setUserFullName] = useState('');
-  // const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
-
-  // useEffect(() => {
-  //   async function fetchUserProfile() {
-  //     try {
-  //       const userData = await getUserProfile(); // Fetch user's profile from Supabase
-  //       localStorage.setItem("userProfile", JSON.stringify(userData));
-  //       // if (userData) {
-  //       //     setUserFullName(userData.fullName); // Set user's full name
-  //       // }
-  //     } catch (error) {
-  //       console.error("Error fetching user profile:", error);
-  //     }
-  //   }
-
-  //   fetchUserProfile(); // Call the function to fetch user profile
-  // }, []);
 
   useEffect(() => {
     async function fetchContacts() {
@@ -58,6 +55,47 @@ const DirectsPage: React.FC = () => {
       }
     }
     fetchContacts();
+
+    // Listen for new messages
+    const handleNewMessage = (message: Message) => {
+      setChats(prevChats => {
+        // Find the index of the chat corresponding to the sender
+        const chatIndex = prevChats.findIndex(chat => 
+          chat.receiver.id === message.contact?.id
+        );
+
+        // If chat found
+        if (chatIndex !== -1) {
+          // Remove the chat from its current position
+          const updatedChat = {...prevChats[chatIndex]};
+          
+          // Update the last message
+          updatedChat.lastMessage = {
+            content: message.content,
+            createdAt: message.createdAt,
+            isRead: false,
+            receiverId: message.receiverId
+          };
+
+          // Create a new array without the original chat
+          const filteredChats = prevChats.filter((_, index) => index !== chatIndex);
+
+          // Add the updated chat to the beginning of the array
+          return [updatedChat, ...filteredChats];
+        }
+
+        // If no matching chat found, return original chats
+        return prevChats;
+      });
+    };
+
+    // Add socket message listener
+    socketService.onMessage(handleNewMessage);
+
+    // Cleanup listener on component unmount
+    return () => {
+      socketService.offMessage(handleNewMessage);
+    };
   }, []);
 
   const formatDate = (dateString?: string): string => {
@@ -69,31 +107,16 @@ const DirectsPage: React.FC = () => {
     return date.format("MM/DD/YYYY");
   };
 
-  // Filter chats based on search query
-  // const filteredChats = chats.filter(chat =>
-  //     chat.receiver?.fullName?.toLowerCase().includes(searchQuery.toLowerCase())
-  // );
-
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
       {/* Top bar */}
       <div className="fixed top-0 w-full bg-white shadow-md z-10">
         <div className="p-3 flex justify-between items-center">
-          {/* <h1 className="text-2xl font-bold">Hello, {userFullName}</h1> */}
           <h1 className="font-poppins italic text-4xl font-bold">LaSo</h1>
         </div>
         <div className="px-3 pb-2 flex justify-between items-center">
           <h2 className="text-xl font-bold">Conversations</h2>
           <IoSearch size={24} />
-          {/* <div id='search-box' className="flex items-center border border-gray-300 rounded-full p-2">
-                        <input
-                            type="text"
-                            placeholder="Search chats..."
-                            className="outline-none border-none ml-2"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)} // Update search query on input change
-                        />
-                    </div> */}
         </div>
       </div>
       {/* Scrollable Chats Section */}
@@ -106,7 +129,7 @@ const DirectsPage: React.FC = () => {
           chats.map((chat) => (
             <div
               key={chat.id}
-              className={`flex justify-between items-center  mb-4 relative`}
+              className={`flex justify-between items-center mb-4 relative`}
               onClick={() =>
                 navigate(`/chat/${chat.id}`, {
                   state: {
@@ -158,10 +181,6 @@ const DirectsPage: React.FC = () => {
                 <p className="text-sm text-gray-400">
                   {formatDate(chat.lastMessage?.createdAt)}
                 </p>
-                {/* {chat.receiver?.unread && chat.receiver.unread > 0 && ( */}
-                {/* <span className="text-xs text-blue-700 rounded-full px-2 py-1"> */}
-                {/* </span> */}
-                {/* )} */}
               </div>
             </div>
           ))
