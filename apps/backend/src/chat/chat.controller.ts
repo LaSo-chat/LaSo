@@ -1,6 +1,9 @@
-import { Controller, Post,Get, Query,Param, Body, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { Controller,Req, Post,Get, Delete,Query,Param, Body, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { Request } from 'express';
+import { supabase } from '../auth/supabaseClient';
+
 
 @Controller('chat')
 export class ChatController {
@@ -71,5 +74,46 @@ async getMessages(
 
     // Call the service to mark messages as read using the user and receiver IDs
     return this.chatService.markMessagesAsRead(user.id, contact.receiverId);
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  @Delete('delete/:contactId')
+  async deleteContact(
+    @Req() req: Request, 
+    @Param('contactId') contactId: number
+  ) {
+    // Assuming the authenticated user's ID is available in the request
+    const accessToken = req.headers.authorization?.split(' ')[1]; // Extract the token
+
+        // Get the authenticated user from Supabase Auth
+        const { data: { user }, error } = await supabase.auth.getUser(accessToken);
+
+        if (error || !user) {
+            throw new UnauthorizedException('User is not authenticated');
+        }
+
+        const userProfile = await this.prisma.user.findUnique({
+          where: { supabaseId: user.id },
+      });
+
+      if (!userProfile) {
+          throw new UnauthorizedException('User profile not found');
+      }
+
+    return this.chatService.deleteContact(userProfile.id, +contactId);
   }
 }
