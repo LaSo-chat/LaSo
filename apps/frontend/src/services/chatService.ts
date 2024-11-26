@@ -140,3 +140,58 @@ export async function getUnreadContactsAndGroupsForUser() {
         groups: unreadGroups
     };
 }
+
+
+
+
+
+
+export const deleteContact = async (contactId: number) => {
+    try {
+      // Get the current user's access token
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+
+    if (sessionError || !sessionData.session) {
+        throw new Error('User is not authenticated');
+    }
+
+    const userId = sessionData.session.user?.id;
+
+    if (!userId) {
+        throw new Error('User ID not found');
+    }
+  
+      const backendUrl = 
+        import.meta.env.VITE_API_URL || "https://your-backend-url.com";
+  
+      const response = await fetch(`${backendUrl}/api/chat/delete/${contactId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionData.session.access_token}`
+        }
+      });
+  
+      // Check if the response is not okay
+      if (!response.ok) {
+        // Try to parse error message from response
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.message || 
+          `HTTP error! status: ${response.status}`
+        );
+      }
+  
+      // Parse and return response data
+      return await response.json();
+    } catch (error) {
+      console.error('Failed to delete contact:', error);
+      
+      // Rethrow or handle specific error types
+      if (error instanceof Error) {
+        throw error;
+      }
+      
+      throw new Error('An unexpected error occurred while deleting contact');
+    }
+  };

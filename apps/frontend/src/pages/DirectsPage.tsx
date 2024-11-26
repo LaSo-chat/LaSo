@@ -9,7 +9,7 @@ import Loader from "@/components/Loader";
 import NavBar from "@/components/ui/NavBar";
 
 interface Chat {
-  id: string;
+  id: number;
   userId?: number;
   receiver: {
     id?: number;
@@ -134,6 +134,7 @@ const DirectsPage: React.FC = () => {
                 navigate(`/chat/${chat.id}`, {
                   state: {
                     receiver: chat.receiver,
+                    chat: chat,
                   },
                 })
               }

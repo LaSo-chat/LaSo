@@ -10,7 +10,7 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { getUserFromSession } from "../services/authService";
 import { socketService } from "../services/socketService";
 import Loader from "@/components/Loader";
-import { markMessagesAsRead } from "@/services/chatService";
+import { deleteContact, markMessagesAsRead } from "@/services/chatService";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { useSocket } from '../contexts/SocketContext';
 
@@ -24,8 +24,25 @@ interface Message {
   translatedContent?: string;
 }
 
+interface Chat {
+  id: number;
+  userId?: number;
+  receiver: {
+    id?: number;
+    image?: string;
+    fullName?: string;
+  };
+  lastMessage?: {
+    content?: string;
+    createdAt?: string;
+    isRead?: boolean;
+    receiverId?: number;
+  };
+}
+
 interface LocationState {
   receiver: { fullName: string };
+  chat: Chat
 }
 
 // Function to format date and time
@@ -71,7 +88,7 @@ const ChatPage: React.FC = () => {
   const [hasMoreMessages, setHasMoreMessages] = useState(true); // Track if there are more messages to load
   const navigate = useNavigate();
   const location = useLocation();
-  const { receiver } = location.state as LocationState;
+  const { receiver, chat } = location.state as LocationState;
   // const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -153,6 +170,27 @@ const ChatPage: React.FC = () => {
     }
   };
 
+  const handleDeleteContact = async (contactId: number) => {
+    try {
+      // Show confirmation box
+      const confirmDelete = window.confirm('Are you sure you want to delete this contact?');
+  
+      if (confirmDelete) {
+        // Proceed with deletion if user confirms
+        await deleteContact(contactId);
+        navigate('/directs'); // Navigate after successful deletion
+      } else {
+        // User canceled the action
+        console.log('Delete action canceled by the user.');
+      }
+    } catch (error) {
+      // Handle error (show toast, alert, etc.)
+      if (error instanceof Error) {
+        alert(error.message);
+      }
+    }
+  };
+
   const updateMessagesAsRead = useCallback(async () => {
     const chatId = Number(id);
     if (isNaN(chatId)) {
@@ -215,7 +253,7 @@ const ChatPage: React.FC = () => {
                 <p className="text-gray-600">{receiver.fullName}</p>
               </div>
               <button
-                // onClick={() => setShowDeleteConfirmation(true)}
+                onClick={() => handleDeleteContact(chat.id)}
                 className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"
               >
                 <IoTrashOutline size={24} />

@@ -1,5 +1,5 @@
 // src/chat/chat.service.ts
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TranslationServiceClient } from '@google-cloud/translate'; // Import v3 client
 import { NotificationService } from '@/notification/notification.service';
@@ -112,8 +112,6 @@ async getMessages(supabaseId: string, contactId: number, offset: number = 0) {
     where: { supabaseId },
   });
 
-  console.log(offset,"----------------------offset");
-  
 
   if (!user) {
     throw new NotFoundException('User not found');
@@ -315,6 +313,97 @@ async getMessages(supabaseId: string, contactId: number, offset: number = 0) {
       message: 'Messages marked as read',
       updatedCount: updateResult.count, // Number of messages updated
     };
+}
+
+
+
+
+
+
+
+
+
+
+
+
+async deleteContact(currentUserId: number, contactId: number) {
+  console.log(typeof(currentUserId),'------------currentUserId');
+  console.log(typeof(contactId),'------------contactId');
+  
+  try {
+    //Find the contact
+    const contact = await this.prisma.contact.findMany({
+      where: {
+        OR: [
+          { 
+            userId: +currentUserId, 
+            receiverId: +contactId 
+          },
+          { 
+            userId: +contactId, 
+            receiverId: +currentUserId 
+          }
+        ]
+      }
+    });
+
+    // console.log(contact,'==============================contact');
+
+    // If no contact found, throw a NotFoundException
+    if (!contact) {
+      throw new NotFoundException('Contact not found');
+    }
+
+    // Use a transaction to ensure atomic operations
+    await this.prisma.$transaction(async (prisma) => {
+      // Delete all messages between users
+      await prisma.message.deleteMany({
+        where: {
+          OR: [
+            { 
+              senderId: currentUserId, 
+              receiverId: contactId 
+            },
+            { 
+              senderId: contactId, 
+              receiverId: currentUserId 
+            }
+          ]
+        }
+      });
+
+      // Delete the contact
+      await prisma.contact.deleteMany({
+        where: {
+          OR: [
+            { 
+              userId: currentUserId, 
+              receiverId: contactId 
+            },
+            { 
+              userId: contactId, 
+              receiverId: currentUserId 
+            }
+          ]
+        }
+      });
+    });
+
+    return { 
+      message: 'Contact deleted successfully',
+      contactId 
+    };
+  } catch (error) {
+    // Log the error for internal tracking
+    console.error('Contact deletion error:', error);
+
+    // Rethrow known errors, wrap unknown errors
+    if (error instanceof NotFoundException) {
+      throw error;
+    }
+
+    throw new InternalServerErrorException('Failed to delete contact');
+  }
 }
 
 }
