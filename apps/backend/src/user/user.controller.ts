@@ -1,13 +1,17 @@
 // src/user/user.controller.ts
-import { Controller,Get, Put, Body, Req, UnauthorizedException, Query } from '@nestjs/common';
+import { Controller,Get, Put, Post, Body, Req, UnauthorizedException, Query } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Request } from 'express';
 import { supabase } from '../auth/supabaseClient';
 import { ProfileUpdateDto } from './dto/profile-update.dto';
+import { UserService } from './user.service';
 
 @Controller('user')
 export class UserController {
-    constructor(private prisma: PrismaService) {}
+    constructor(
+      private prisma: PrismaService,
+      private readonly userService: UserService
+    ) {}
 
     @Put('profile')
     async updateProfile(@Body() profileData: ProfileUpdateDto, @Req() req: Request) {
@@ -117,6 +121,32 @@ export class UserController {
       country: contact.receiver.country,
       preferredLang: contact.receiver.preferredLang,
     }));
+  }
+
+
+
+
+ @Post('fcmtoken')
+  async updateFcmToken(@Body('fcmToken') fcmToken: string, @Req() req: Request) {
+    // Extract the access token from the authorization header
+    const accessToken = req.headers.authorization?.split(' ')[1]; // Extract the token
+
+    if (!accessToken) {
+      throw new UnauthorizedException('Authorization token is missing');
+    }
+
+    // Get the authenticated user from Supabase Auth using the access token
+    const { data: { user }, error } = await supabase.auth.getUser(accessToken);
+
+    if (error || !user) {
+      throw new UnauthorizedException('User is not authenticated');
+    }
+
+    // Call the service to update the FCM token for the user
+    const updatedUser = await this.userService.updateFcmToken(user.id, fcmToken);
+
+    // Return the updated user data (or just a success message if necessary)
+    return updatedUser;
   }
 
 }

@@ -19,43 +19,62 @@ import DirectsPage from "./pages/DirectsPage";
 import { SocketProvider } from "./contexts/SocketContext";
 import GroupChatPage from "./pages/GroupChatPage";
 import { PwaInstallPopup } from "./components/PwaInstallPopup";
+import { useFCM } from "./hooks/useFCM"; // Assuming we've moved this to a hooks folder
+import { Toaster } from "react-hot-toast";
+import { initializeNotifications } from "./config/notification";
+import { socketService } from "./services/socketService";
 
 const App: React.FC = () => {
   useAuth(); // Check session and restore authentication state
-  const isAuthenticated = useSelector(
-    (state: RootState) => state.auth.isAuthenticated
-  );
+  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
+  const { fcmToken, notificationError } = useFCM(); // Use FCM hook
+
+  React.useEffect(() => {
+    if (fcmToken) {
+      console.log("FCM Token:", fcmToken);
+      // Token sending is now handled in the useFCM hook
+    }
+
+    if (notificationError) {
+      console.error("Notification Error:", notificationError);
+    }
+    initializeNotifications();
+
+    // Clean up on unmount
+    return () => {
+      // Disconnect socket when component unmounts
+      socketService.disconnect();
+    };
+  }, [fcmToken, notificationError]);
+
+  // Helper component for protected routes
+  const ProtectedRoute: React.FC<{ element: React.ReactElement }> = ({ element }) => {
+    return isAuthenticated ? element : <Navigate to="/login" />;
+  };
 
   return (
     <SocketProvider>
       <Routes>
-        {/* Display LandingPage as the starting page */}
         <Route path="/" element={<LandingPage />} />
-
-        {/* Protected routes based on authentication */}
-        <Route
-          path="/home"
-          element={isAuthenticated ? <Home /> : <Navigate to="/login" />}
-        />
-        <Route path="/profile-step-1" element={<ProfileStep1 />} />
-        <Route path="/profile-step-2" element={<ProfileStep2 />} />
-        <Route path="/chat/:id" element={<ChatPage />} />
-        <Route path="/group/:id" element={<GroupChatPage />} />
-        <Route path="/account" element={<AccountPage />} />
-        <Route
-          path="/login"
-          element={!isAuthenticated ? <Login /> : <Navigate to="/home" />}
-        />
+        <Route path="/home" element={<ProtectedRoute element={<Home />} />} />
+        <Route path="/profile-step-1" element={<ProtectedRoute element={<ProfileStep1 />} />} />
+        <Route path="/profile-step-2" element={<ProtectedRoute element={<ProfileStep2 />} />} />
+        <Route path="/chat/:id" element={<ProtectedRoute element={<ChatPage />} />} />
+        <Route path="/group/:id" element={<ProtectedRoute element={<GroupChatPage />} />} />
+        <Route path="/account" element={<ProtectedRoute element={<AccountPage />} />} />
+        <Route path="/login" element={!isAuthenticated ? <Login /> : <Navigate to="/home" />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path="/termsofservice" element={<TermsOfServicePage />} />
         <Route path="/contactus" element={<ContactUsPage />} />
         <Route path="/feedback" element={<FeedbackPage />} />
-        <Route path="/groups" element={<GroupsPage />} />
-        <Route path="/directs" element={<DirectsPage />} />
+        <Route path="/groups" element={<ProtectedRoute element={<GroupsPage />} />} />
+        <Route path="/directs" element={<ProtectedRoute element={<DirectsPage />} />} />
       </Routes>
       <PwaInstallPopup />
+      <Toaster/>
     </SocketProvider>
   );
 };
 
 export default App;
+

@@ -8,6 +8,8 @@ import { ChatModule } from './chat/chat.module';
 import { ConfigModule } from '@nestjs/config';
 import { GroupChatModule } from './group-chat/group-chat.module';
 import { SharedModule } from './shared/shared.module';
+import { FirebaseModule } from './firebase/firebase.module';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [PrismaModule,
@@ -15,7 +17,7 @@ import { SharedModule } from './shared/shared.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
-    UserModule, AuthModule, ChatModule, GroupChatModule, SharedModule],
+    UserModule, AuthModule, ChatModule, GroupChatModule, SharedModule, FirebaseModule, NotificationModule],
   controllers: [AppController],
   providers: [AppService],
 })

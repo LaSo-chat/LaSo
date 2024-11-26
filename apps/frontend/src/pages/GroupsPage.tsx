@@ -13,6 +13,32 @@ import moment from "moment";
 import Loader from "@/components/Loader";
 import { getUserFromSession } from '../services/authService';
 import NavBar from "@/components/ui/NavBar";
+import { socketService } from '../services/socketService';
+
+
+interface Translation {
+  userId: number;
+  translatedContent: string;
+}
+interface User {
+  id: number;
+  supabaseId: string;
+  email: string;
+  fullName: string;
+  profilePicture?: string;
+  preferredLang: string;
+}
+interface GroupMessage {
+  id: number;
+  content: string;
+  translatedContent?: string;  // Added translated content
+  groupId: number;
+  senderId: number;
+  createdAt: string;
+  isRead: boolean;
+  sender: User;
+  translations: Translation[];
+}
 
 interface GroupMember {
   id: number;
@@ -22,11 +48,12 @@ interface GroupMember {
 }
 
 interface Group {
-  id: string;
+  id: number;
   name: string;
   description?: string;
   memberCount: number;
   members: GroupMember[];
+  senderId?: number;
   lastMessage?: {
     content?: string;
     createdAt?: string;
@@ -123,6 +150,48 @@ const GroupsPage: React.FC = () => {
     setSelectedMembers([]);
     setSearchTerm("");
   };
+
+  useEffect(() => {
+    const handleGroupMessage = (message: GroupMessage) => {
+      setGroups(prevGroups => 
+        prevGroups.map(group => 
+          group.id === message.groupId 
+            ? {
+                ...group, 
+                lastMessage: {
+                  content: message.content,
+                  createdAt: message.createdAt,
+                  isRead: false,
+                  sender: {
+                    id: message.sender.id,
+                    email: message.sender.email,
+                    fullName: message.sender.fullName,
+                    preferredLang: message.sender.preferredLang
+                  }
+                }
+              }
+            : group
+        )
+      );
+    };
+
+    // Connect to socket and add listener
+    const connectSocket = async () => {
+      try {
+        await socketService.connect();
+        socketService.onGroupMessage(handleGroupMessage);
+      } catch (error) {
+        console.error('Failed to connect to socket:', error);
+      }
+    };
+
+    connectSocket();
+
+    // Cleanup listener on component unmount
+    return () => {
+      socketService.offGroupMessage(handleGroupMessage);
+    };
+  }, []);
 
   const closeControlledDrawer = () => setIsControlledDrawerOpen(false);
 
@@ -266,9 +335,9 @@ const GroupsPage: React.FC = () => {
                   variant="beam"
                 />
                 <div>
-                  <h3 className="font-semibold">{group.name}</h3>
+                  <h3 className={`font-semibold truncate w-48 whitespace-nowrap ${!group.lastMessage?.isRead && group.lastMessage?.sender.id != group.senderId ? "font-extrabold text-black" : "text-gray-500"}`}>{group.name}</h3>
                   <p className="text-xs text-gray-500">{group.memberCount} members</p>
-                  <p className="text-sm text-gray-500 truncate w-48">
+                  <p className={`text-sm truncate w-48 whitespace-nowrap ${!group.lastMessage?.isRead && group.lastMessage?.sender.id != group.senderId ? "font-extrabold text-black" : "text-gray-500"}`}>
                     {group.lastMessage ? 
                       `${group.lastMessage.sender.fullName}: ${group.lastMessage.content}` :
                       "No messages yet"}
