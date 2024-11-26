@@ -24,22 +24,6 @@ export class UserController {
             throw new UnauthorizedException('User is not authenticated');
         }
 
-        // // 1. Update Supabase Auth meta-data
-        // const { error: authError } = await supabase.auth.updateUser({
-        //     data: {
-        //         phone: profileData.phone,
-        //         raw_user_meta_data: {
-        //             fullName: profileData.fullName,
-        //             country: profileData.country,
-        //             preferredLang: profileData.preferredLang,
-        //         },
-        //     },
-        // });
-
-        // if (authError) {
-        //     throw new Error(`Failed to update Supabase Auth: ${authError.message}`);
-        // }
-
         // 2. Update or Create User record in the database (Prisma)
         const updatedUser = await this.prisma.user.upsert({
             where: { supabaseId: user.id },  // Use the Supabase user ID as a unique identifier
