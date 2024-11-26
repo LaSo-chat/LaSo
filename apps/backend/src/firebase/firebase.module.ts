@@ -2,6 +2,7 @@ import * as path from 'path';
 import * as admin from 'firebase-admin';
 import { Module } from '@nestjs/common';
 import * as dotenv from 'dotenv';
+import * as fs from 'fs';
 
 // Load environment variables
 dotenv.config();
@@ -13,20 +14,22 @@ dotenv.config();
       useFactory: async () => {
         const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
         console.log('Service Account Path:', serviceAccountPath); // Log the path
-        if (!serviceAccountPath) {
-          throw new Error('FIREBASE_SERVICE_ACCOUNT_PATH is not set');
-        }
-        
-        // Ensure path is resolved correctly
-        const serviceAccount = require(path.resolve(serviceAccountPath));
-        
-        
-        // Initialize Firebase Admin SDK
-        admin.initializeApp({
-          credential: admin.credential.cert(serviceAccount),
-        });
+        try {
+          const fileContents = fs.readFileSync(serviceAccountPath, 'utf8');
+          console.log('Raw File Contents:', fileContents);
+          
+          const serviceAccount = JSON.parse(fileContents);
+          console.log('Parsed Service Account:', serviceAccount);
+          
+          admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount),
+          });
 
-        return admin; // Firebase admin instance
+          return admin;
+        } catch (error) {
+          console.error('Error reading/parsing service account:', error);
+          throw error;
+        }
       },
     },
   ],
