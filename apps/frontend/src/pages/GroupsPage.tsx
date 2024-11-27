@@ -427,7 +427,6 @@ const GroupsPage: React.FC = () => {
             <button
               onClick={handleCreateGroup}
               className="bg-sky-500 text-white p-3 rounded-full w-full"
-              disabled={selectedMembers.length > 0}
             >
               Create Group
             </button>
