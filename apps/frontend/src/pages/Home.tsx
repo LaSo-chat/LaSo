@@ -10,6 +10,8 @@ import Avatar from "boring-avatars";
 import moment from "moment";
 import Loader from "@/components/Loader";
 import NavBar from "@/components/ui/NavBar";
+import { Card } from "@/components/ui/card";
+import { MessageSquareText, QrCode, Users2 } from 'lucide-react';
 
 interface Chat {
   id: string;
@@ -36,21 +38,13 @@ const Home: React.FC = () => {
   const dispatch = useDispatch();
 
   const handleSessionError = async () => {
-    // Clear local storage
     localStorage.clear();
-    
-    // Sign out from Supabase
     await supabase.auth.signOut();
-    
-    // Update Redux state
     dispatch(logout());
-    
-    // Navigate to login
     navigate('/login');
   };
 
   useEffect(() => {
-    // Check session on component mount
     const checkSession = async () => {
       const { data: { session }, error } = await supabase.auth.getSession();
       if (error || !session) {
@@ -62,7 +56,6 @@ const Home: React.FC = () => {
 
     checkSession();
 
-    // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {
         handleSessionError();
@@ -80,10 +73,9 @@ const Home: React.FC = () => {
         const userData = await getUserProfile();
         localStorage.setItem("userProfile", JSON.stringify(userData));
         localStorage.setItem("userId", JSON.stringify(userData.id));
-        localStorage.setItem("userSupabaseId", JSON.stringify(userData.supabaseId));
+        localStorage.setItem("userSupabaseId", JSON.stringify(userData.id));
       } catch (error: any) {
         console.error("Error fetching user profile:", error);
-        // Check if error is related to session
         if (error.message?.includes('session') || error.message?.includes('authentication')) {
           handleSessionError();
         }
@@ -97,13 +89,10 @@ const Home: React.FC = () => {
     async function fetchUnreadChats() {
       try {
         const unreadData = await getUnreadContactsAndGroupsForUser();
-        const directChats = unreadData.contacts;
-        const groupChats = unreadData.groups;
-        setDirectChats(directChats);
-        setGroupChats(groupChats);
+        setDirectChats(unreadData.contacts);
+        setGroupChats(unreadData.groups);
       } catch (error: any) {
         console.error("Failed to fetch unread chats:", error);
-        // Check if error is related to session
         if (error.message?.includes('session') || error.message?.includes('authentication')) {
           handleSessionError();
         }
@@ -125,7 +114,6 @@ const Home: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
-      {/* Top bar */}
       <div className="fixed top-0 w-full bg-white shadow-md z-10">
         <div className="p-3 flex justify-between items-center">
           <h1 className="font-poppins italic text-4xl font-bold">LaSo</h1>
@@ -136,13 +124,49 @@ const Home: React.FC = () => {
         </div>
       </div>
 
-      {/* Scrollable Chats Section */}
-      <div className="flex-1 mt-28 overflow-y-auto p-3">
+      <div className="px-3 mt-28 pb-4">
+          <div className="grid gap-3">
+            <Card className="relative overflow-hidden bg-sky-100 border-none">
+              <div className="p-4 flex items-center justify-between">
+                <div className="space-y-2">
+                  <h3 className="text-xl font-bold text-gray-800">
+                    Break Language Barriers
+                  </h3>
+                  <p className="text-sm text-gray-600 max-w-[160px]">
+                    Chat in your language, they read in theirs
+                  </p>
+                </div>
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-90">
+                  <MessageSquareText size={80} className="text-sky-200" />
+                </div>
+              </div>
+            </Card>
+
+            <div className="grid grid-cols-2 gap-3">
+              <Card className="bg-rose-100 border-none">
+                <div className="p-4 relative overflow-hidden">
+                  <h3 className="font-semibold mb-1">Group Chats</h3>
+                  <p className="text-xs text-gray-600">Multi-language groups</p>
+                  <Users2 className="absolute right-2 bottom-2 text-rose-200" size={32} />
+                </div>
+              </Card>
+
+              <Card className="bg-emerald-100 border-none">
+                <div className="p-4 relative overflow-hidden">
+                  <h3 className="font-semibold mb-1">Quick Connect</h3>
+                  <p className="text-xs text-gray-600">Scan QR to chat</p>
+                  <QrCode className="absolute right-2 bottom-2 text-emerald-200" size={32} />
+                </div>
+              </Card>
+            </div>
+          </div>
+        </div>
+
+      <div className="flex-1 overflow-y-auto p-3">
         {loading ? (
           <Loader />
         ) : (
           <>
-            {/* Direct Chats Section */}
             {directChats.length > 0 && (
               <div className="mb-6">
                 <h3 className="text-lg font-semibold mb-2">Direct Chats</h3>
@@ -212,7 +236,6 @@ const Home: React.FC = () => {
               </div>
             )}
 
-            {/* Group Chats Section */}
             {groupChats.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold mb-2">Group Chats</h3>
@@ -282,7 +305,6 @@ const Home: React.FC = () => {
               </div>
             )}
 
-            {/* No chats available message */}
             {directChats.length === 0 && groupChats.length === 0 && (
               <p>No chats available.</p>
             )}
@@ -290,10 +312,10 @@ const Home: React.FC = () => {
         )}
       </div>
 
-      {/* Bottom Navigation Bar */}
       <NavBar />
     </div>
   );
 };
 
 export default Home;
+

@@ -34,12 +34,15 @@ import {
     }
   
     @Get('getGroups')
-    async getGroups(@Query('userId') userId: string) {
+    async getGroups(
+      @Query('userId') userId: string,
+      @Query('limit') limit: string,
+    ) {
       if (!userId) {
         throw new BadRequestException('User ID is required');
       }
-  
-      return this.groupChatService.getGroupsForUser(userId);
+      const parsedLimit = limit ? parseInt(limit, 10) : undefined;
+      return this.groupChatService.getGroupsForUser(userId, parsedLimit);
     }
   
     @Get(':groupId/messages')

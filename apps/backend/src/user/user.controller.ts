@@ -1,5 +1,5 @@
 // src/user/user.controller.ts
-import { Controller,Get, Put, Post, Body, Req, UnauthorizedException, Query } from '@nestjs/common';
+import { Controller, Get, Put, Post, Body, Req, UnauthorizedException, Query } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Request } from 'express';
 import { supabase } from '../auth/supabaseClient';
@@ -8,70 +8,70 @@ import { UserService } from './user.service';
 
 @Controller('user')
 export class UserController {
-    constructor(
-      private prisma: PrismaService,
-      private readonly userService: UserService
-    ) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly userService: UserService
+  ) { }
 
-    @Put('profile')
-    async updateProfile(@Body() profileData: ProfileUpdateDto, @Req() req: Request) {
-        const accessToken = req.headers.authorization?.split(' ')[1]; // Extract the token
+  @Put('profile')
+  async updateProfile(@Body() profileData: ProfileUpdateDto, @Req() req: Request) {
+    const accessToken = req.headers.authorization?.split(' ')[1]; // Extract the token
 
-        // Get the authenticated user from Supabase Auth
-        const { data: { user }, error } = await supabase.auth.getUser(accessToken);
+    // Get the authenticated user from Supabase Auth
+    const { data: { user }, error } = await supabase.auth.getUser(accessToken);
 
-        if (error || !user) {
-            throw new UnauthorizedException('User is not authenticated');
-        }
-
-        // 2. Update or Create User record in the database (Prisma)
-        const updatedUser = await this.prisma.user.upsert({
-            where: { supabaseId: user.id },  // Use the Supabase user ID as a unique identifier
-            update: {
-                fullName: profileData.fullName,
-                phone: profileData.phone,
-                country: profileData.country,
-                preferredLang: profileData.preferredLang,
-            },
-            create: {
-                supabaseId: user.id,  // Insert the Supabase user ID during record creation
-                email: user.email,
-                fullName: profileData.fullName,
-                phone: profileData.phone,
-                country: profileData.country,
-                dateOfBirth: new Date(profileData.dateOfBirth),
-                preferredLang: profileData.preferredLang,
-            },
-        });
-
-        return updatedUser;
+    if (error || !user) {
+      throw new UnauthorizedException('User is not authenticated');
     }
 
-    // Get user profile
-    @Get('profile')
-    async getProfile(@Req() req: Request) {
-        const accessToken = req.headers.authorization?.split(' ')[1];
+    // 2. Update or Create User record in the database (Prisma)
+    const updatedUser = await this.prisma.user.upsert({
+      where: { supabaseId: user.id },  // Use the Supabase user ID as a unique identifier
+      update: {
+        fullName: profileData.fullName,
+        phone: profileData.phone,
+        country: profileData.country,
+        preferredLang: profileData.preferredLang,
+      },
+      create: {
+        supabaseId: user.id,  // Insert the Supabase user ID during record creation
+        email: user.email,
+        fullName: profileData.fullName,
+        phone: profileData.phone,
+        country: profileData.country,
+        dateOfBirth: new Date(profileData.dateOfBirth),
+        preferredLang: profileData.preferredLang,
+      },
+    });
 
-        // Get the authenticated user from Supabase
-        const { data: { user }, error } = await supabase.auth.getUser(accessToken);
-        if (error || !user) {
-            throw new UnauthorizedException('User is not authenticated');
-        }
+    return updatedUser;
+  }
 
-        // Fetch user from the database using Prisma
-        const userProfile = await this.prisma.user.findUnique({
-            where: { supabaseId: user.id },
-        });
+  // Get user profile
+  @Get('profile')
+  async getProfile(@Req() req: Request) {
+    const accessToken = req.headers.authorization?.split(' ')[1];
 
-        if (!userProfile) {
-            throw new UnauthorizedException('User profile not found');
-        }
-
-        return userProfile;
+    // Get the authenticated user from Supabase
+    const { data: { user }, error } = await supabase.auth.getUser(accessToken);
+    if (error || !user) {
+      throw new UnauthorizedException('User is not authenticated');
     }
 
+    // Fetch user from the database using Prisma
+    const userProfile = await this.prisma.user.findUnique({
+      where: { supabaseId: user.id },
+    });
 
-    // Fetch user's contacts based on the supabaseId query parameter
+    if (!userProfile) {
+      throw new UnauthorizedException('User profile not found');
+    }
+
+    return userProfile;
+  }
+
+
+  // Fetch user's contacts based on the supabaseId query parameter
   @Get('contacts')
   async getContacts(@Query('userId') userId: string) {
     // Ensure supabaseId is provided as a query parameter
@@ -108,9 +108,7 @@ export class UserController {
   }
 
 
-
-
- @Post('fcmtoken')
+  @Post('fcmToken')
   async updateFcmToken(@Body('fcmToken') fcmToken: string, @Req() req: Request) {
     // Extract the access token from the authorization header
     const accessToken = req.headers.authorization?.split(' ')[1]; // Extract the token
