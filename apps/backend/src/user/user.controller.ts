@@ -1,5 +1,5 @@
 // src/user/user.controller.ts
-import { Controller, Get, Put, Post, Body, Req, UnauthorizedException, Query, HttpCode, HttpStatus, Headers } from '@nestjs/common';
+import { Controller, Get, Put, Body, Req, UnauthorizedException, Query, HttpCode, HttpStatus, Headers } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Request } from 'express';
 import { supabase } from '../auth/supabaseClient';
@@ -32,6 +32,7 @@ export class UserController {
         phone: profileData.phone,
         country: profileData.country,
         preferredLang: profileData.preferredLang,
+        fcmToken : profileData.fcmToken,
       },
       create: {
         supabaseId: user.id,  // Insert the Supabase user ID during record creation
@@ -41,6 +42,7 @@ export class UserController {
         country: profileData.country,
         dateOfBirth: new Date(profileData.dateOfBirth),
         preferredLang: profileData.preferredLang,
+        fcmToken : profileData.fcmToken,
       },
     });
 
@@ -108,7 +110,7 @@ export class UserController {
   }
 
 
-  @Post('fcmToken')
+  @Put('fcmToken')
   @HttpCode(HttpStatus.OK)
   async updateFcmToken(
     @Body('fcmToken') fcmToken: string,

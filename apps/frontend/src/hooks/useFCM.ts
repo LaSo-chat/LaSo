@@ -22,6 +22,7 @@ export const useFCM = () => {
           if (token) {
             console.log('FCM Token:', token);
             setFcmToken(token);
+            localStorage.setItem("fcmToken", token);
             await sendFcmTokenToBackend(token);
           } else {
             throw new Error('No FCM token received');
@@ -55,7 +56,7 @@ export const useFCM = () => {
       };
   
       const response = await fetch(`${backendUrl}/api/user/fcmToken`, {
-        method: 'POST',
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${sessionData.session.access_token}`,
