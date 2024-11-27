@@ -193,7 +193,9 @@ const messageWithTranslations = {
 
 // Send notifications to group members
 await Promise.all(
-  groupMembers.map(async ({ user }) => {
+  groupMembers
+  .filter(({ user }) => user.id !== sender.id)
+  .map(async ({ user }) => {
     // Find the translated content for this user
     const translatedContent = translations.find(t => t?.userId === user.id)?.translatedContent || content;
 
