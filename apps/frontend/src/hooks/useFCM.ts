@@ -54,7 +54,7 @@ export const useFCM = () => {
         body: 'You have successfully registered for notifications.',
       };
   
-      const response = await fetch(`${backendUrl}/api/user/fcmtoken`, {
+      const response = await fetch(`${backendUrl}/api/user/fcmToken`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

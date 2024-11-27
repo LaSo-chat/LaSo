@@ -76,7 +76,7 @@ export class GroupChatService {
   }
 
   // Get all groups for a user
-  async getGroupsForUser(supabaseId: string) {
+  async getGroupsForUser(supabaseId: string, limit?: number) {
     const user = await this.prisma.user.findUnique({
       where: { supabaseId },
     });
@@ -109,6 +109,7 @@ export class GroupChatService {
           },
         },
       },
+      take: limit
     });
 
     return groupMemberships.map((membership) => ({

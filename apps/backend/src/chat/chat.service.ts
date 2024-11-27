@@ -211,7 +211,7 @@ async getMessages(supabaseId: string, contactId: number, offset: number = 0) {
   }
 
   // Get the contacts for the logged-in user
-  async getContactsForUser(supabaseId: string) {
+  async getContactsForUser(supabaseId: string, limit?: number) {
     try {
       const user = await this.prisma.user.findUnique({
         where: { supabaseId: supabaseId },
@@ -232,6 +232,7 @@ async getMessages(supabaseId: string, contactId: number, offset: number = 0) {
           user: true,
           receiver: true
         },
+        take: limit,
       });
 
       const filteredContacts = contacts.filter(

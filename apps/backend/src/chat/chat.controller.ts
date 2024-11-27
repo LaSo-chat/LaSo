@@ -10,8 +10,12 @@ export class ChatController {
   constructor(private readonly chatService: ChatService, private prisma: PrismaService) {}
 
   @Get('contacts')
-  async getContacts(@Query('userId') userId: string) {
-    return this.chatService.getContactsForUser(userId);
+  async getContacts(
+    @Query('userId') userId: string,
+    @Query('limit') limit: string,
+  ) {
+    const parsedLimit = limit ? parseInt(limit, 10) : undefined;
+    return this.chatService.getContactsForUser(userId, parsedLimit);
   }
 
   @Get('messages/:contactId')

@@ -44,10 +44,10 @@ const NavBar: React.FC<NavBarProps> = ({ onNewGroupClick }) => {
         if (newChat) {
           alert("Successfully Connected");
           closeNewChatDrawer();
-          if (location.pathname === "/home") {
+          if (location.pathname === "/directs") {
             window.location.reload();
           } else {
-            navigate("/home");
+            navigate("/directs");
           }
         }
       } catch (error) {
