@@ -1,5 +1,5 @@
 // src/user/user.controller.ts
-import { Controller, Get, Put, Post, Body, Req, UnauthorizedException, Query } from '@nestjs/common';
+import { Controller, Get, Put, Post, Body, Req, UnauthorizedException, Query, HttpCode, HttpStatus, Headers } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Request } from 'express';
 import { supabase } from '../auth/supabaseClient';
@@ -109,26 +109,58 @@ export class UserController {
 
 
   @Post('fcmToken')
-  async updateFcmToken(@Body('fcmToken') fcmToken: string, @Req() req: Request) {
-    // Extract the access token from the authorization header
-    const accessToken = req.headers.authorization?.split(' ')[1]; // Extract the token
-
-    if (!accessToken) {
-      throw new UnauthorizedException('Authorization token is missing');
+  @HttpCode(HttpStatus.OK)
+  async updateFcmToken(
+    @Body('fcmToken') fcmToken: string,
+    @Headers('authorization') authorization: string
+  ) {
+    // Validate input
+    if (!fcmToken ) {
+      return { 
+        success: false, 
+        message: 'Missing fcmToken' 
+      };
     }
 
-    // Get the authenticated user from Supabase Auth using the access token
-    const { data: { user }, error } = await supabase.auth.getUser(accessToken);
-
-    if (error || !user) {
-      throw new UnauthorizedException('User is not authenticated');
+    if (!authorization ) {
+      return { 
+        success: false, 
+        message: 'Missing authorization' 
+      };
     }
+    // Extract access token
+    const accessToken = authorization.split(' ')[1];
 
-    // Call the service to update the FCM token for the user
-    const updatedUser = await this.userService.updateFcmToken(user.id, fcmToken);
+    try {
+      // Verify user
+      const { data, error } = await supabase.auth.getUser(accessToken);
+      
+      if (error || !data.user) {
+        return { 
+          success: false, 
+          message: 'Unauthorized' 
+        };
+      }
 
-    // Return the updated user data (or just a success message if necessary)
-    return updatedUser;
+      // Direct database update
+      await this.prisma.user.update({
+        where: { supabaseId: data.user.id },
+        data: { 
+          fcmToken: fcmToken,
+        }
+      });
+
+      return { 
+        success: true, 
+        message: 'Token updated successfully' 
+      };
+    } catch (error) {
+      return { 
+        success: false, 
+        message: 'Update failed',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
   }
 
 }
