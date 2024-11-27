@@ -143,9 +143,7 @@ const ChatPage: React.FC = () => {
     fetchMessages();
 
     // Subscribe to new messages only if the socket is connected
-    if (isConnected) {
       socketService.onMessage(handleNewMessage);
-    }
 
     return () => {
       socketService.offMessage(handleNewMessage);

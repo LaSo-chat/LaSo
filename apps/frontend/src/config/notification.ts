@@ -113,27 +113,32 @@ export const initializeNotifications = async (): Promise<void> => {
     // Initialize FCM
     await initializeFCM();
 
-    // Initialize socket connection
-    await socketService.connect();
+     // Initialize socket connection
+     const socket = await socketService.connect();
 
-    // Set up socket notification handling
-    socketService.onMessage((message) => {
-      console.log('Direct message received:', message);
-      toast(`New message: ${message.content}`, {
-        duration: 5000,
-        position: 'top-center',
-        icon: '🔔',
-      });
-    });
-
-    socketService.onGroupMessage((groupMessage) => {
-      console.log('Group message received:', groupMessage);
-      toast(`New group message: ${groupMessage.content}`, {
-        duration: 5000,
-        position: 'top-center',
-        icon: '👥',
-      });
-    });
+     if (!socket) {
+       console.error('Failed to connect to socket');
+       return;
+     }
+ 
+     // Set up socket notification handling
+     socket.on('notification', (message) => {
+       console.log('Direct notification received:', message);
+       toast(`New direct message: ${message.data.messageWithTranslation.content}`, {
+         duration: 5000,
+         position: 'top-center',
+         icon: '🔔',
+       });
+     });
+ 
+     socket.on('group_notification', (groupMessage) => {
+       console.log('Group notification received:', groupMessage);
+       toast(`New group message from ${groupMessage.data.group.name}: ${groupMessage.data.messageWithTranslations.content}`, {
+         duration: 5000,
+         position: 'top-center',
+         icon: '👥',
+       });
+     });
 
   } catch (error) {
     console.error('Error initializing notifications:', error);
