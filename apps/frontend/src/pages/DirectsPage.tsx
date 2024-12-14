@@ -56,38 +56,7 @@ const DirectsPage: React.FC = () => {
     }
     fetchContacts();
 
-    // Listen for new messages
-    const handleNewMessage = (message: Message) => {
-      setChats(prevChats => {
-        // Find the index of the chat corresponding to the sender
-        const chatIndex = prevChats.findIndex(chat => 
-          chat.receiver.id === message.contact?.id
-        );
 
-        // If chat found
-        if (chatIndex !== -1) {
-          // Remove the chat from its current position
-          const updatedChat = {...prevChats[chatIndex]};
-          
-          // Update the last message
-          updatedChat.lastMessage = {
-            content: message.content,
-            createdAt: message.createdAt,
-            isRead: false,
-            receiverId: message.receiverId
-          };
-
-          // Create a new array without the original chat
-          const filteredChats = prevChats.filter((_, index) => index !== chatIndex);
-
-          // Add the updated chat to the beginning of the array
-          return [updatedChat, ...filteredChats];
-        }
-
-        // If no matching chat found, return original chats
-        return prevChats;
-      });
-    };
 
     // Add socket message listener
     socketService.onMessage(handleNewMessage);
@@ -97,6 +66,39 @@ const DirectsPage: React.FC = () => {
       socketService.offMessage(handleNewMessage);
     };
   }, []);
+
+  // Listen for new messages
+  const handleNewMessage = (message: Message) => {
+    setChats(prevChats => {
+      // Find the index of the chat corresponding to the sender
+      const chatIndex = prevChats.findIndex(chat =>
+        chat.receiver.id === message.contact?.id
+      );
+
+      // If chat found
+      if (chatIndex !== -1) {
+        // Remove the chat from its current position
+        const updatedChat = { ...prevChats[chatIndex] };
+
+        // Update the last message
+        updatedChat.lastMessage = {
+          content: message.content,
+          createdAt: message.createdAt,
+          isRead: false,
+          receiverId: message.receiverId
+        };
+
+        // Create a new array without the original chat
+        const filteredChats = prevChats.filter((_, index) => index !== chatIndex);
+
+        // Add the updated chat to the beginning of the array
+        return [updatedChat, ...filteredChats];
+      }
+
+      // If no matching chat found, return original chats
+      return prevChats;
+    });
+  };
 
   const formatDate = (dateString?: string): string => {
     if (!dateString) return "";
