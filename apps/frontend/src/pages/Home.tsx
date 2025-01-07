@@ -169,7 +169,7 @@ const Home: React.FC = () => {
           <>
             {directChats.length > 0 && (
               <div className="mb-6">
-                <h3 className="text-lg font-semibold mb-2">Direct Chats</h3>
+                <h3 className="text-lg font-semibold mb-2">Unread Direct Chats</h3>
                 {directChats.map((chat) => (
                   <div
                     key={chat.id}
@@ -238,7 +238,7 @@ const Home: React.FC = () => {
 
             {groupChats.length > 0 && (
               <div>
-                <h3 className="text-lg font-semibold mb-2">Group Chats</h3>
+                <h3 className="text-lg font-semibold mb-2">Unread Group Chats</h3>
                 {groupChats.map((chat) => (
                   <div
                     key={chat.id}

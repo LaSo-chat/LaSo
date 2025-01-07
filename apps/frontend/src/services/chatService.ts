@@ -137,13 +137,13 @@ export async function getUnreadContactsAndGroupsForUser() {
   // console.log(groups,'+++++++++++++++++groups');
 
   // Filter unread contacts and groups (if the backend doesn't filter by isRead)
-  // const unreadContacts = contacts.filter((contact: any) => contact.lastMessage?.isRead === false);
-  // const unreadGroups = groups.filter((group: any) => group.lastMessage?.isRead === false);
+  const unreadContacts = contacts.filter((contact: any) => contact.lastMessage?.isRead === false);
+  const unreadGroups = groups.filter((group: any) => group.lastMessage?.isRead === false);
 
   // Return both unread contacts and groups
   return {
-    contacts: contacts,
-    groups: groups,
+    contacts: unreadContacts,
+    groups: unreadGroups,
   };
 }
 
