@@ -20,7 +20,7 @@ const AccountPage: React.FC = () => {
         setIsLoading(true);
         const storedUserProfile = localStorage.getItem("userProfile");
         if (!storedUserProfile) {
-          const userData = await getUserProfile(); // Fetch the user's profile from Supabase
+          const userData = await getUserProfile(navigate); // Fetch the user's profile from Supabase
           if (userData) {
             setFullName(userData.fullName);
             setEmail(userData.email);
@@ -58,7 +58,7 @@ const AccountPage: React.FC = () => {
     };
 
     try {
-      await updateUserProfile(updatedProfile); // Update the user's profile
+      await updateUserProfile(updatedProfile, navigate); // Update the user's profile
       alert("Profile updated successfully!");
     } catch (error) {
       console.error("Error updating profile:", error);

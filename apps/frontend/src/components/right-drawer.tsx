@@ -32,11 +32,13 @@ export default function SettingsDrawer({
 
   const handleLogout = async (): Promise<void> => {
     try {
-      await signOut(dispatch); // Pass dispatch as an argument
-      navigate("/login"); // Redirect after logging out
+      await signOut(dispatch); // Pass dispatch to signOut
+      localStorage.clear();
+      navigate("/login");
     } catch (error) {
       console.error("Failed to log out:", (error as Error).message);
-      alert("Failed to log out. Please try again.");
+      localStorage.clear();
+      navigate("/login");
     }
   };
   return (

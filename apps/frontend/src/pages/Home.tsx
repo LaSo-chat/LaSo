@@ -70,7 +70,7 @@ const Home: React.FC = () => {
   useEffect(() => {
     async function fetchUserProfile() {
       try {
-        const userData = await getUserProfile();
+        const userData = await getUserProfile(navigate);
         localStorage.setItem("userProfile", JSON.stringify(userData));
         localStorage.setItem("userId", JSON.stringify(userData.id));
         localStorage.setItem("userSupabaseId", JSON.stringify(userData.id));

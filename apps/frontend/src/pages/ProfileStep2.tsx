@@ -20,7 +20,7 @@ const ProfileStep2: React.FC = () => {
             };
 
             try {
-                await updateUserProfile(profileData); // Call the API to update profile
+                await updateUserProfile(profileData, navigate); // Call the API to update profile
                 // localStorage.setItem('profileData', JSON.stringify(res));
                 console.log('Profile updated successfully');
                 navigate('/home'); // Redirect to home after successful profile completion

@@ -109,7 +109,7 @@ const ChatPage: React.FC = () => {
     async function fetchMessages() {
       try {
         setIsLoading(true);
-        const userId = await getUserFromSession();
+        const userId = await getUserFromSession(navigate);
         setSenderId(userId);
 
         const backendUrl =
