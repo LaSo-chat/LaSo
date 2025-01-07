@@ -1,35 +1,48 @@
+import { NavigateFunction } from 'react-router-dom';
 import { supabase } from './authService';
 
-// Function to get the user profile from the backend via API call
-export async function getUserProfile() {
-    // Get the current session, which contains the access token
-    const { data: sessionData, error } = await supabase.auth.getSession();
+export async function getUserProfile(navigate?: NavigateFunction) {
+    try {
+        // Get the current session, which contains the access token
+        const { data: sessionData, error } = await supabase.auth.getSession();
 
-    if (error || !sessionData.session) {
-        throw new Error('Failed to retrieve session');
+        if (error || !sessionData.session) {
+            throw new Error('Failed to retrieve session');
+        }
+
+        const token = sessionData.session.access_token;
+
+        // Fetch the user profile data from your backend API
+        const backendUrl = import.meta.env.VITE_API_URL || 'https://laso.onrender.com';
+        const response = await fetch(`${backendUrl}/api/user/profile`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.message || 'Failed to fetch user profile');
+        }
+
+        return result;
+        
+    } catch (error) {
+        console.error('Profile fetch error:', error);
+        localStorage.clear();
+        
+        if (navigate) {
+            navigate("/login");
+        }
+        
+        throw error;
     }
-
-    const token = sessionData.session.access_token; // Extract the access token
-
-    // Fetch the user profile data from your backend API
-    const backendUrl = import.meta.env.VITE_API_URL || 'https://laso.onrender.com';
-    const response = await fetch(`${backendUrl}/api/user/profile`, {
-        method: 'GET',
-        headers: {
-            'Authorization': `Bearer ${token}`, // Include the token in headers
-        },
-    });
-
-    const result = await response.json();
-    if (!response.ok) {
-        throw new Error(result.message || 'Failed to fetch user profile');
-    }
-
-    return result; // Return user profile data
 }
 
 // Function to update the user profile
-export async function updateUserProfile(data: any) {
+export async function updateUserProfile(data: any, navigate?: NavigateFunction) {
+    try {
     // Get the current session, which contains the access token
     const { data: sessionData, error } = await supabase.auth.getSession();
 
@@ -56,4 +69,14 @@ export async function updateUserProfile(data: any) {
     }
 
     return result; // Return the result of the profile update
+} catch (error) {
+    console.error('Profile fetch error:', error);
+    localStorage.clear();
+    
+    if (navigate) {
+        navigate("/login");
+    }
+    
+    throw error;
+}
 }

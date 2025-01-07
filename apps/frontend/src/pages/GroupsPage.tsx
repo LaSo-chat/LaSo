@@ -15,11 +15,11 @@ import { getUserFromSession } from '../services/authService';
 import NavBar from "@/components/ui/NavBar";
 import { socketService } from '../services/socketService';
 
-
 interface Translation {
   userId: number;
   translatedContent: string;
 }
+
 interface User {
   id: number;
   supabaseId: string;
@@ -28,10 +28,11 @@ interface User {
   profilePicture?: string;
   preferredLang: string;
 }
+
 interface GroupMessage {
   id: number;
   content: string;
-  translatedContent?: string;  // Added translated content
+  translatedContent?: string;
   groupId: number;
   senderId: number;
   createdAt: string;
@@ -118,7 +119,7 @@ const GroupsPage: React.FC = () => {
       if (isNewGroupDrawerOpen) {
         try {
           setMembersLoading(true);
-          const userId = await getUserFromSession();
+          const userId = await getUserFromSession(navigate);
           const backendUrl = import.meta.env.VITE_API_URL || 'https://laso.onrender.com';
           const response = await fetch(`${backendUrl}/api/user/contacts?userId=${userId}`, {
             headers: {
@@ -142,14 +143,6 @@ const GroupsPage: React.FC = () => {
 
     fetchMembers();
   }, [isNewGroupDrawerOpen]);
-
-  const closeNewGroupDrawer = () => {
-    setIsNewGroupDrawerOpen(false);
-    setNewGroupName("");
-    setNewGroupDescription("");
-    setSelectedMembers([]);
-    setSearchTerm("");
-  };
 
   useEffect(() => {
     const handleGroupMessage = (message: GroupMessage) => {
@@ -192,6 +185,14 @@ const GroupsPage: React.FC = () => {
       socketService.offGroupMessage(handleGroupMessage);
     };
   }, []);
+
+  const closeNewGroupDrawer = () => {
+    setIsNewGroupDrawerOpen(false);
+    setNewGroupName("");
+    setNewGroupDescription("");
+    setSelectedMembers([]);
+    setSearchTerm("");
+  };
 
   const closeControlledDrawer = () => setIsControlledDrawerOpen(false);
 
@@ -243,14 +244,11 @@ const GroupsPage: React.FC = () => {
     }
   };
 
-  const handleGroupClick = async (group: any) => {
+  const handleGroupClick = async (group: Group) => {
     try {
-      // Mark messages as read when entering the group
       const userId = await getUserFromSession();
-      console.log(group,'-----------group');
-      
       const backendUrl = import.meta.env.VITE_API_URL || 'https://laso.onrender.com';
-      fetch(`${backendUrl}/api/groups/${group.id}/messages/read?userId=${userId}`, {
+      await fetch(`${backendUrl}/api/groups/${group.id}/messages/read?userId=${userId}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -267,7 +265,6 @@ const GroupsPage: React.FC = () => {
       });
     } catch (error) {
       console.error('Error marking messages as read:', error);
-      // Still navigate even if marking as read fails
       navigate(`/group/${group.id}`);
     }
   };
@@ -281,20 +278,6 @@ const GroupsPage: React.FC = () => {
     return date.format("MM/DD/YYYY");
   };
 
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-4">
-        <p className="text-red-500 mb-4">{error}</p>
-        <button 
-          onClick={() => window.location.reload()} 
-          className="bg-sky-500 text-white px-4 py-2 rounded-full"
-        >
-          Retry
-        </button>
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
       {/* Top bar */}
@@ -307,7 +290,6 @@ const GroupsPage: React.FC = () => {
           <IoSearch size={24} />
         </div>
       </div>
-
       {/* Scrollable Groups Section */}
       <div className="flex-1 mt-28 overflow-y-auto p-3">
         {loading ? (
@@ -321,7 +303,7 @@ const GroupsPage: React.FC = () => {
               className="flex justify-between items-center mb-4 relative cursor-pointer"
               onClick={() => handleGroupClick(group)}
             >
-              {!group.lastMessage?.isRead && (
+              {!group.lastMessage?.isRead && group.lastMessage?.sender.id !== group.senderId && (
                 <IoEllipse
                   size={15}
                   className="absolute top-0 left-0 text-sky-600 bg-white rounded-full"
@@ -335,12 +317,22 @@ const GroupsPage: React.FC = () => {
                   variant="beam"
                 />
                 <div>
-                  <h3 className={`font-semibold truncate w-48 whitespace-nowrap ${!group.lastMessage?.isRead && group.lastMessage?.sender.id != group.senderId ? "font-extrabold text-black" : "text-gray-500"}`}>{group.name}</h3>
+                  <h3 className={`font-semibold truncate w-48 whitespace-nowrap ${
+                    !group.lastMessage?.isRead && group.lastMessage?.sender.id !== group.senderId
+                      ? "font-extrabold text-black"
+                      : "text-gray-500"
+                  }`}>
+                    {group.name}
+                  </h3>
                   <p className="text-xs text-gray-500">{group.memberCount} members</p>
-                  <p className={`text-sm truncate w-48 whitespace-nowrap ${!group.lastMessage?.isRead && group.lastMessage?.sender.id != group.senderId ? "font-extrabold text-black" : "text-gray-500"}`}>
-                    {group.lastMessage ? 
-                      `${group.lastMessage.sender.fullName}: ${group.lastMessage.content}` :
-                      "No messages yet"}
+                  <p className={`text-sm truncate w-48 whitespace-nowrap ${
+                    !group.lastMessage?.isRead && group.lastMessage?.sender.id !== group.senderId
+                      ? "font-extrabold text-black"
+                      : "text-gray-500"
+                  }`}>
+                    {group.lastMessage
+                      ? `${group.lastMessage.sender.fullName}: ${group.lastMessage.content}`
+                      : "No messages yet"}
                   </p>
                 </div>
               </div>
@@ -353,11 +345,9 @@ const GroupsPage: React.FC = () => {
           ))
         )}
       </div>
+      <NavBar onNewGroupClick={() => setIsNewGroupDrawerOpen(true)} />
 
-      {/* Bottom Navigation Bar */}
-       <NavBar onNewGroupClick={() => setIsNewGroupDrawerOpen(true)} />
-
-      {/* Drawer for New Group */}
+      {/* New Group Drawer */}
       <Drawer open={isNewGroupDrawerOpen} onClose={() => setIsNewGroupDrawerOpen(false)}>
         <DrawerContent>
           <div className="flex justify-between items-center p-4">

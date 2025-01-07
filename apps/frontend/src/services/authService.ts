@@ -2,6 +2,7 @@
 import { createClient, SupabaseClient, Session, User } from '@supabase/supabase-js';
 import { Dispatch } from 'redux';
 import { logout } from '../app/slices/authSlice';
+import { NavigateFunction } from 'react-router-dom';
 
 const supabaseUrl: string = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey: string = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -48,21 +49,31 @@ export const signOut = async (dispatch: Dispatch): Promise<void> => {
     localStorage.removeItem('userProfile'); // Adjust the key as necessary
 };
 
-export async function getUserFromSession() {
-    const { data, error } = await supabase.auth.getSession();
-    
-    if (error || !data.session) {
-        throw new Error('Unable to get session');
+export async function getUserFromSession(navigate?: NavigateFunction) {
+    try {
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error || !data.session) {
+            throw new Error('Unable to get session');
+        }
+        
+        const user = data.session.user;
+        
+        if (!user) {
+            throw new Error('No user associated with this session');
+        }
+        console.log(user.id, 'user.id');
+        
+        return user.id;
+    } catch (error) {
+        console.error('Session error:', error);
+        localStorage.clear();
+        
+        // Only navigate if the navigate function is provided
+        if (navigate) {
+            navigate("/login");
+        }
+        
+        throw error; // Re-throw the error for the caller to handle if needed
     }
-    
-    const user = data.session.user;
-    
-    if (!user) {
-        throw new Error('No user associated with this session');
-    }
-
-    console.log(user.id,'user.id');
-    
-
-    return user.id; // This will be the `supabaseId` in your database
 }

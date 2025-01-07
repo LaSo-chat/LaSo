@@ -120,7 +120,7 @@ const GroupChatPage: React.FC = () => {
       if (!isMounted) return;
 
       try {
-        const userId = await getUserFromSession();
+        const userId = await getUserFromSession(navigate);
         setSenderId(userId);
 
         const socket = await socketService.connect();
