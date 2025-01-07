@@ -74,7 +74,6 @@ const GroupsPage: React.FC = () => {
   const [isControlledDrawerOpen, setIsControlledDrawerOpen] = useState(false);
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [newGroupName, setNewGroupName] = useState("");
   const [newGroupDescription, setNewGroupDescription] = useState("");
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
@@ -103,7 +102,6 @@ const GroupsPage: React.FC = () => {
         const data = await response.json();
         setGroups(data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch groups');
         console.error('Error fetching groups:', err);
       } finally {
         setLoading(false);
