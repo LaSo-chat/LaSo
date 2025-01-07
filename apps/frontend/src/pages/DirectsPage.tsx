@@ -117,7 +117,7 @@ const DirectsPage: React.FC = () => {
           <h1 className="font-poppins italic text-4xl font-bold">LaSo</h1>
         </div>
         <div className="px-3 pb-2 flex justify-between items-center">
-          <h2 className="text-xl font-bold">Conversations</h2>
+          <h2 className="text-xl font-bold">Direct Messages</h2>
           <IoSearch size={24} />
         </div>
       </div>
